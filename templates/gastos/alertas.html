@@ -1,0 +1,43 @@
+{% extends 'gastos/base.html' %}
+
+{% block titulo %}Alertas{% endblock %}
+
+{% block contenido %}
+<h4 class="mb-4">Panel de Alertas</h4>
+
+<h5>Urgentes</h5>
+<ul class="list-group mb-4">
+    {% for g in urgentes %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ g.descripcion }}
+        <span class="badge bg-danger">${{ g.monto|floatformat:0 }}</span>
+    </li>
+    {% empty %}
+    <li class="list-group-item text-center">Sin gastos urgentes</li>
+    {% endfor %}
+</ul>
+
+<h5>Vencen en 7 días</h5>
+<ul class="list-group mb-4">
+    {% for g in proximos_7 %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ g.descripcion }}
+        <span class="badge bg-warning text-dark">{{ g.fecha_vencimiento }}</span>
+    </li>
+    {% empty %}
+    <li class="list-group-item text-center">Sin vencimientos próximos</li>
+    {% endfor %}
+</ul>
+
+<h5>Vencen en 30 días</h5>
+<ul class="list-group">
+    {% for g in proximos_30 %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ g.descripcion }}
+        <span class="badge bg-info text-dark">{{ g.fecha_vencimiento }}</span>
+    </li>
+    {% empty %}
+    <li class="list-group-item text-center">Sin vencimientos próximos</li>
+    {% endfor %}
+</ul>
+{% endblock %}

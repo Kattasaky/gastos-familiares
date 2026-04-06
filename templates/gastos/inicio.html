@@ -1,0 +1,61 @@
+#página de inicio con el resumen del mes, gastos urgentes y próximos a vencer. 
+#Extiende la plantilla base, que tiene el menú y el footer. Solo define el contenido específico de esta página, que es el resumen de gastos.
+
+{% extends 'gastos/base.html' %}
+
+{% block titulo %}Inicio — Gastos Familiares{% endblock %}
+
+{% block contenido %}
+<h4 class="mb-4">Resumen de {{ resumen.mes }}/{{ resumen.año }}</h4>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-dark">
+            <div class="card-body">
+                <h6>Total del mes</h6>
+                <h3>${{ resumen.total|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h6>Gastos urgentes</h6>
+                <h3>{{ urgentes.count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6>Vencen en 7 días</h6>
+                <h3>{{ proximos.count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if urgentes %}
+<h5>Urgentes</h5>
+<ul class="list-group mb-4">
+    {% for g in urgentes %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ g.descripcion }}
+        <span class="badge bg-danger">${{ g.monto|floatformat:0 }}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if proximos %}
+<h5>Próximos a vencer</h5>
+<ul class="list-group">
+    {% for g in proximos %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ g.descripcion }}
+        <span class="badge bg-warning text-dark">{{ g.fecha_vencimiento }}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

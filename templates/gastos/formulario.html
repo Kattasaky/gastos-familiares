@@ -1,0 +1,53 @@
+{% extends 'gastos/base.html' %}
+
+{% block titulo %}{% if gasto %}Editar{% else %}Nuevo{% endif %} Gasto{% endblock %}
+
+{% block contenido %}
+<h4 class="mb-4">{% if gasto %}Editar{% else %}Nuevo{% endif %} Gasto</h4>
+
+<div class="col-md-6">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" name="descripcion" class="form-control"
+                value="{{ gasto.descripcion }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Monto</label>
+            <input type="number" name="monto" class="form-control"
+                value="{{ gasto.monto }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Categoría</label>
+            <select name="categoria" class="form-select">
+                <option value="">Sin categoría</option>
+                {% for c in categorias %}
+                <option value="{{ c.pk }}" {% if gasto.categoria == c %}selected{% endif %}>
+                    {{ c }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Fecha vencimiento</label>
+            <input type="date" name="fecha_vencimiento" class="form-control"
+                value="{{ gasto.fecha_vencimiento }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Prioridad</label>
+            <select name="prioridad" class="form-select">
+                <option value="normal">Normal</option>
+                <option value="urgente">Urgente</option>
+                <option value="postergable">Postergable</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea name="notas" class="form-control">{{ gasto.notas }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-dark">Guardar</button>
+        <a href="{% url 'lista_gastos' %}" class="btn btn-outline-dark">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

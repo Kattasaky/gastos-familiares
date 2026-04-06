@@ -1,0 +1,49 @@
+{% extends 'gastos/base.html' %}
+
+{% block titulo %}Lista de Gastos{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between mb-4">
+    <h4>Mis Gastos</h4>
+    <a href="{% url 'nuevo_gasto' %}" class="btn btn-dark">+ Nuevo gasto</a>
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Categoría</th>
+            <th>Fecha</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in gastos %}
+        <tr>
+            <td>{{ g.descripcion }}</td>
+            <td>${{ g.monto|floatformat:0 }}</td>
+            <td>{{ g.categoria }}</td>
+            <td>{{ g.fecha }}</td>
+            <td>{{ g.get_prioridad_display }}</td>
+            <td>{{ g.get_estado_display }}</td>
+            <td class="d-flex gap-1">
+                <a href="{% url 'editar_gasto' g.pk %}" class="btn btn-sm btn-outline-dark">Editar</a>
+                <form method="post" action="{% url 'marcar_pagado' g.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-success">Pagado</button>
+                </form>
+                <form method="post" action="{% url 'eliminar_gasto' g.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center">No hay gastos registrados</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

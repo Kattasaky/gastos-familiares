@@ -1,0 +1,53 @@
+{% extends 'gastos/base.html' %}
+
+{% block titulo %}Lista de Compras{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between mb-4">
+    <h4>Lista de Compras</h4>
+    <form method="post" action="{% url 'limpiar_comprados' %}">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger">Limpiar comprados</button>
+    </form>
+</div>
+
+<form method="post" action="{% url 'agregar_compra' %}" class="row mb-4">
+    {% csrf_token %}
+    <div class="col-md-5">
+        <input type="text" name="nombre" class="form-control" placeholder="Ítem" required>
+    </div>
+    <div class="col-md-2">
+        <input type="number" name="cantidad" class="form-control" value="1" min="1">
+    </div>
+    <div class="col-md-3">
+        <select name="categoria" class="form-select">
+            <option value="">Sin categoría</option>
+            {% for c in categorias %}
+            <option value="{{ c.pk }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-dark w-100">Agregar</button>
+    </div>
+</form>
+
+<ul class="list-group">
+    {% for item in items %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <form method="post" action="{% url 'toggle_compra' item.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-sm {% if item.comprado %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                {% if item.comprado %}✓{% else %}○{% endif %}
+            </button>
+        </form>
+        <span {% if item.comprado %}style="text-decoration:line-through"{% endif %}>
+            {{ item.nombre }} (x{{ item.cantidad }})
+        </span>
+        <span class="text-muted small">{{ item.categoria }}</span>
+    </li>
+    {% empty %}
+    <li class="list-group-item text-center">Lista vacía</li>
+    {% endfor %}
+</ul>
+{% endblock %}

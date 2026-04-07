@@ -99,6 +99,7 @@ def agregar_compra(request):
                 usuario=request.user,
                 nombre=request.POST.get('nombre', ''),
                 cantidad=int(request.POST.get('cantidad', 1)),
+                valor_aprox=request.POST.get('valor_aprox') or None,
                 categoria_id=request.POST.get('categoria') or None,
             )
         except ValueError as e:

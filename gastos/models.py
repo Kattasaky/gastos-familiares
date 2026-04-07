@@ -18,6 +18,7 @@ class Categoria(models.Model): #categorias de gastos
 class Gasto(models.Model): #cada gasto registrado como monto, fecha, etc
     PRIORIDAD_CHOICES = [
         ('urgente', 'Urgente'),
+        ('alta', 'Alta'),
         ('normal', 'Normal'),
         ('postergable', 'Postergable'),
     ]
@@ -29,7 +30,7 @@ class Gasto(models.Model): #cada gasto registrado como monto, fecha, etc
 
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gastos')
     descripcion = models.CharField(max_length=200)
-    monto = models.DecimalField(max_digits=12, decimal_places=0)
+    monto = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
     fecha = models.DateField(default=timezone.now)
     fecha_vencimiento = models.DateField(null=True, blank=True)
@@ -62,6 +63,7 @@ class ItemCompra(models.Model): #lista de compras, con nombre del producto, cant
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lista_compras')
     nombre = models.CharField(max_length=150)
     cantidad = models.PositiveIntegerField(default=1)
+    valor_aprox = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
     comprado = models.BooleanField(default=False)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)

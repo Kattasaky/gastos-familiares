@@ -28,7 +28,7 @@
     <div class="col-md-4">
         <div class="card text-white bg-warning">
             <div class="card-body">
-                <h6>Vencen en 7 días</h6>
+                <h6>Vencen dentro de 7 días</h6>
                 <h3>{{ proximos.count }}</h3>
             </div>
         </div>
@@ -48,7 +48,7 @@
 {% endif %}
 
 {% if proximos %}
-<h5>Próximos a vencer</h5>
+<h5>Próximos a vencer dentro de 7 días</h5>
 <ul class="list-group">
     {% for g in proximos %}
     <li class="list-group-item d-flex justify-content-between">

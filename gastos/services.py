@@ -70,9 +70,9 @@ def gastos_proximos_a_vencer(usuario, dias=7):
     return Gasto.objects.filter(
         usuario=usuario,
         estado='pendiente',
-        fecha_vencimiento__range=(hoy, limite),
+    ).filter(
+        fecha_vencimiento__range=(hoy, limite)
     ).order_by('fecha_vencimiento')
-
 
 def gastos_urgentes(usuario):
     return Gasto.objects.filter(
@@ -131,10 +131,6 @@ def crear_pago_recurrente(usuario, descripcion, dia_pago=None, monto=None,
     )
 
 def generar_gastos_del_mes(usuario):
-    """
-    Genera gastos automáticos desde pagos recurrentes activos.
-    Llamar una vez al mes o al entrar al inicio.
-    """
     from django.utils import timezone
     hoy = timezone.now().date()
     generados = 0
@@ -146,7 +142,16 @@ def generar_gastos_del_mes(usuario):
             pago.save()
             continue
 
-        fecha_vencimiento = hoy.replace(day=min(pago.dia_pago, 28))
+        if pago.frecuencia == 'semanal':
+            if pago.dia_semana is None:
+                continue
+            fecha_vencimiento = hoy
+        else:
+            if pago.dia_pago is None:
+                continue
+            dia = min(pago.dia_pago, 28)
+            fecha_vencimiento = hoy.replace(day=dia)
+
         ya_existe = Gasto.objects.filter(
             usuario=usuario,
             descripcion=pago.descripcion,
@@ -170,7 +175,6 @@ def generar_gastos_del_mes(usuario):
             generados += 1
 
     return generados
-
 
 def crear_ingreso(usuario, descripcion, monto, tipo='sueldo',
                   fecha=None, es_fijo=False):

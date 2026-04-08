@@ -1,0 +1,53 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Nuevo Pago Recurrente{% endblock %}
+{% block contenido %}
+<h4 class="mb-4">Nuevo Pago Recurrente</h4>
+<div class="col-md-6">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" name="descripcion" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Monto (dejar vacío si es variable)</label>
+            <input type="number" name="monto" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Día del mes que se paga</label>
+            <input type="number" name="dia_pago" class="form-control" min="1" max="31" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Categoría</label>
+            <select name="categoria" class="form-select">
+                <option value="">Sin categoría</option>
+                {% for c in categorias %}
+                <option value="{{ c.pk }}">{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Frecuencia</label>
+            <select name="frecuencia" class="form-select">
+                <option value="mensual">Mensual fijo</option>
+                <option value="cuotas">En cuotas</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Total de cuotas (solo si es en cuotas)</label>
+            <input type="number" name="total_cuotas" class="form-control" min="1" max="18">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Prioridad</label>
+            <select name="prioridad" class="form-select">
+                <option value="urgente">Urgente</option>
+                <option value="alta">Alta</option>
+                <option value="normal">Normal</option>
+                <option value="postergable">Postergable</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-dark">Guardar</button>
+        <a href="{% url 'lista_recurrentes' %}" class="btn btn-outline-dark">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

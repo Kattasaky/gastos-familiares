@@ -14,4 +14,10 @@ urlpatterns = [
     path('compras/agregar/', views.agregar_compra, name='agregar_compra'),
     path('compras/<int:pk>/toggle/', views.toggle_compra, name='toggle_compra'),
     path('compras/limpiar/', views.limpiar_comprados, name='limpiar_comprados'),
+    path('recurrentes/', views.lista_recurrentes, name='lista_recurrentes'),
+    path('recurrentes/nuevo/', views.nuevo_recurrente, name='nuevo_recurrente'),
+    path('recurrentes/<int:pk>/eliminar/', views.eliminar_recurrente, name='eliminar_recurrente'),
+    path('ingresos/', views.lista_ingresos, name='lista_ingresos'),
+    path('ingresos/nuevo/', views.nuevo_ingreso, name='nuevo_ingreso'),
+    path('ingresos/<int:pk>/eliminar/', views.eliminar_ingreso, name='eliminar_ingreso'),
 ]

@@ -74,3 +74,56 @@ class ItemCompra(models.Model): #lista de compras, con nombre del producto, cant
     def __str__(self):
         estado = '✓' if self.comprado else '○'
         return f"{estado} {self.nombre} (x{self.cantidad})"
+    
+class PagoRecurrente(models.Model):
+    FRECUENCIA_CHOICES = [
+        ('mensual', 'Mensual'),
+        ('cuotas', 'En cuotas'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pagos_recurrentes')
+    descripcion = models.CharField(max_length=200)
+    monto = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
+    frecuencia = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES, default='mensual')
+    dia_pago = models.PositiveIntegerField(help_text='Día del mes en que se paga')
+    total_cuotas = models.PositiveIntegerField(null=True, blank=True, help_text='Solo si es en cuotas')
+    cuotas_pagadas = models.PositiveIntegerField(default=0)
+    prioridad = models.CharField(max_length=20, choices=Gasto.PRIORIDAD_CHOICES, default='normal')
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['dia_pago']
+
+    def __str__(self):
+        return f"{self.descripcion} — día {self.dia_pago}"
+
+    @property
+    def cuotas_restantes(self):
+        if self.total_cuotas:
+            return self.total_cuotas - self.cuotas_pagadas
+        return None
+
+
+class Ingreso(models.Model):
+    TIPO_CHOICES = [
+        ('sueldo', 'Sueldo'),
+        ('extra', 'Extra'),
+        ('pyme', 'Pyme'),
+        ('otro', 'Otro'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ingresos')
+    descripcion = models.CharField(max_length=200)
+    monto = models.DecimalField(max_digits=12, decimal_places=0)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='sueldo')
+    fecha = models.DateField(default=timezone.now)
+    es_fijo = models.BooleanField(default=False, help_text='Si es fijo se repite cada mes')
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.descripcion} — ${self.monto:,.0f}"

@@ -104,3 +104,99 @@ def marcar_comprado(item_id, usuario):
 def limpiar_comprados(usuario):
     eliminados, _ = ItemCompra.objects.filter(usuario=usuario, comprado=True).delete()
     return eliminados
+
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
+
+
+def crear_pago_recurrente(usuario, descripcion, dia_pago, monto=None,
+                           categoria_id=None, frecuencia='mensual',
+                           total_cuotas=None, prioridad='normal'):
+    if not descripcion or not descripcion.strip():
+        raise ValueError("La descripción no puede estar vacía.")
+    if not 1 <= int(dia_pago) <= 31:
+        raise ValueError("El día debe estar entre 1 y 31.")
+    return PagoRecurrente.objects.create(
+        usuario=usuario,
+        descripcion=descripcion.strip(),
+        monto=monto or None,
+        categoria_id=categoria_id,
+        frecuencia=frecuencia,
+        dia_pago=dia_pago,
+        total_cuotas=total_cuotas or None,
+        prioridad=prioridad,
+    )
+
+
+def generar_gastos_del_mes(usuario):
+    """
+    Genera gastos automáticos desde pagos recurrentes activos.
+    Llamar una vez al mes o al entrar al inicio.
+    """
+    from django.utils import timezone
+    hoy = timezone.now().date()
+    generados = 0
+
+    pagos = PagoRecurrente.objects.filter(usuario=usuario, activo=True)
+    for pago in pagos:
+        if pago.total_cuotas and pago.cuotas_pagadas >= pago.total_cuotas:
+            pago.activo = False
+            pago.save()
+            continue
+
+        fecha_vencimiento = hoy.replace(day=min(pago.dia_pago, 28))
+        ya_existe = Gasto.objects.filter(
+            usuario=usuario,
+            descripcion=pago.descripcion,
+            fecha__year=hoy.year,
+            fecha__month=hoy.month,
+        ).exists()
+
+        if not ya_existe:
+            Gasto.objects.create(
+                usuario=usuario,
+                descripcion=pago.descripcion,
+                monto=pago.monto,
+                categoria=pago.categoria,
+                fecha=hoy,
+                fecha_vencimiento=fecha_vencimiento,
+                prioridad=pago.prioridad,
+            )
+            if pago.total_cuotas:
+                pago.cuotas_pagadas += 1
+                pago.save()
+            generados += 1
+
+    return generados
+
+
+def crear_ingreso(usuario, descripcion, monto, tipo='sueldo',
+                  fecha=None, es_fijo=False):
+    if not descripcion or not descripcion.strip():
+        raise ValueError("La descripción no puede estar vacía.")
+    if float(monto) <= 0:
+        raise ValueError("El monto debe ser mayor a cero.")
+    from django.utils import timezone
+    return Ingreso.objects.create(
+        usuario=usuario,
+        descripcion=descripcion.strip(),
+        monto=monto,
+        tipo=tipo,
+        fecha=fecha or timezone.now().date(),
+        es_fijo=es_fijo,
+    )
+
+
+def resumen_ingresos_mes(usuario, año, mes):
+    from django.db.models import Sum
+    ingresos = Ingreso.objects.filter(
+        usuario=usuario,
+        fecha__year=año,
+        fecha__month=mes,
+    )
+    total = ingresos.aggregate(total=Sum('monto'))['total'] or 0
+    por_tipo = ingresos.values('tipo').annotate(subtotal=Sum('monto'))
+    return {
+        'total': total,
+        'por_tipo': list(por_tipo),
+        'cantidad': ingresos.count(),
+    }

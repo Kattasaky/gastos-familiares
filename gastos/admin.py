@@ -19,3 +19,15 @@ class GastoAdmin(admin.ModelAdmin):
 class ItemCompraAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'cantidad', 'comprado', 'usuario']
     list_filter = ['comprado']
+
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
+
+@admin.register(PagoRecurrente)
+class PagoRecurrenteAdmin(admin.ModelAdmin):
+    list_display = ['descripcion', 'monto', 'frecuencia', 'dia_pago', 'activo']
+    list_filter = ['frecuencia', 'activo']
+
+@admin.register(Ingreso)
+class IngresoAdmin(admin.ModelAdmin):
+    list_display = ['descripcion', 'monto', 'tipo', 'fecha', 'es_fijo']
+    list_filter = ['tipo', 'es_fijo']

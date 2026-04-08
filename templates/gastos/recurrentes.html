@@ -1,0 +1,47 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Pagos Recurrentes{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between mb-4">
+    <h4>Pagos Recurrentes</h4>
+    <a href="{% url 'nuevo_recurrente' %}" class="btn btn-dark">+ Nuevo</a>
+</div>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Día pago</th>
+            <th>Frecuencia</th>
+            <th>Cuotas</th>
+            <th>Prioridad</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pagos %}
+        <tr>
+            <td>{{ p.descripcion }}</td>
+            <td>{% if p.monto %}${{ p.monto|floatformat:0 }}{% else %}Variable{% endif %}</td>
+            <td>Día {{ p.dia_pago }}</td>
+            <td>{{ p.get_frecuencia_display }}</td>
+            <td>
+                {% if p.total_cuotas %}
+                    {{ p.cuotas_pagadas }}/{{ p.total_cuotas }}
+                {% else %}
+                    Indefinido
+                {% endif %}
+            </td>
+            <td>{{ p.get_prioridad_display }}</td>
+            <td>
+                <form method="post" action="{% url 'eliminar_recurrente' p.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center">No hay pagos recurrentes</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

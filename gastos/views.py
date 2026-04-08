@@ -119,3 +119,82 @@ def limpiar_comprados(request):
         n = services.limpiar_comprados(request.user)
         messages.success(request, f'{n} ítem(s) eliminado(s).')
     return redirect('lista_compras')
+
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
+
+
+@login_required
+def lista_recurrentes(request):
+    pagos = PagoRecurrente.objects.filter(usuario=request.user)
+    return render(request, 'gastos/recurrentes.html', {'pagos': pagos})
+
+
+@login_required
+def nuevo_recurrente(request):
+    if request.method == 'POST':
+        try:
+            services.crear_pago_recurrente(
+                usuario=request.user,
+                descripcion=request.POST.get('descripcion', ''),
+                dia_pago=request.POST.get('dia_pago', 1),
+                monto=request.POST.get('monto') or None,
+                categoria_id=request.POST.get('categoria') or None,
+                frecuencia=request.POST.get('frecuencia', 'mensual'),
+                total_cuotas=request.POST.get('total_cuotas') or None,
+                prioridad=request.POST.get('prioridad', 'normal'),
+            )
+            messages.success(request, 'Pago recurrente creado.')
+            return redirect('lista_recurrentes')
+        except ValueError as e:
+            messages.error(request, str(e))
+    return render(request, 'gastos/form_recurrente.html', {
+        'categorias': Categoria.objects.all()
+    })
+
+
+@login_required
+def eliminar_recurrente(request, pk):
+    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        pago.delete()
+        messages.success(request, 'Pago recurrente eliminado.')
+    return redirect('lista_recurrentes')
+
+
+@login_required
+def lista_ingresos(request):
+    hoy = timezone.now().date()
+    ingresos = Ingreso.objects.filter(usuario=request.user)
+    resumen = services.resumen_ingresos_mes(request.user, hoy.year, hoy.month)
+    return render(request, 'gastos/ingresos.html', {
+        'ingresos': ingresos,
+        'resumen': resumen,
+    })
+
+
+@login_required
+def nuevo_ingreso(request):
+    if request.method == 'POST':
+        try:
+            services.crear_ingreso(
+                usuario=request.user,
+                descripcion=request.POST.get('descripcion', ''),
+                monto=request.POST.get('monto', 0),
+                tipo=request.POST.get('tipo', 'sueldo'),
+                fecha=request.POST.get('fecha') or None,
+                es_fijo=request.POST.get('es_fijo') == 'on',
+            )
+            messages.success(request, 'Ingreso registrado.')
+            return redirect('lista_ingresos')
+        except ValueError as e:
+            messages.error(request, str(e))
+    return render(request, 'gastos/form_ingreso.html')
+
+
+@login_required
+def eliminar_ingreso(request, pk):
+    ingreso = get_object_or_404(Ingreso, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        ingreso.delete()
+        messages.success(request, 'Ingreso eliminado.')
+    return redirect('lista_ingresos')

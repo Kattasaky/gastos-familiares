@@ -20,4 +20,6 @@ urlpatterns = [
     path('ingresos/', views.lista_ingresos, name='lista_ingresos'),
     path('ingresos/nuevo/', views.nuevo_ingreso, name='nuevo_ingreso'),
     path('ingresos/<int:pk>/eliminar/', views.eliminar_ingreso, name='eliminar_ingreso'),
+    path('registro/', views.registro, name='registro'),
+
 ]

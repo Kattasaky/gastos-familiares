@@ -16,7 +16,10 @@
             <a class="text-white" href="{% url 'lista_gastos' %}">Gastos</a>
             <a class="text-white" href="{% url 'lista_compras' %}">Compras</a>
             <a class="text-white" href="{% url 'alertas' %}">Alertas</a>
-            <a class="text-white" href="{% url 'logout' %}">Salir</a>
+            <form method="post" action="{% url 'logout' %}" style="display:inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-link text-white p-0">Salir</button>
+</form>
             <a class="text-white" href="{% url 'lista_recurrentes' %}">Recurrentes</a>
             <a class="text-white" href="{% url 'lista_ingresos' %}">Ingresos</a>
             <a class="text-white" href="{% url 'estadisticas' %}">Estadísticas</a>

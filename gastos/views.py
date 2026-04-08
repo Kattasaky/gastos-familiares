@@ -2,6 +2,8 @@
 #El decorador @login_required protege cada página — si no estás logueada te manda al login.
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
@@ -200,3 +202,14 @@ def eliminar_ingreso(request, pk):
         ingreso.delete()
         messages.success(request, 'Ingreso eliminado.')
     return redirect('lista_ingresos')
+
+def registro(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            login(request, usuario)
+            return redirect('inicio')
+    else:
+        form = UserCreationForm()
+    return render(request, 'gastos/registro.html', {'form': form})

@@ -209,10 +209,8 @@ def registro(request):
         if form.is_valid():
             usuario = form.save()
             login(request, usuario)
-            messages.success(request, f'¡Bienvenida {usuario.username}! Cuenta creada exitosamente.')
+            messages.success(request, f'¡Bienvenid@ {usuario.username}! Cuenta creada exitosamente.')
             return redirect('inicio')
-        else:
-            messages.error(request, 'Por favor corrige los errores.')
     else:
         form = UserCreationForm()
     return render(request, 'gastos/registro.html', {'form': form})

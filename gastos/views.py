@@ -12,13 +12,14 @@ from .models import Gasto, Categoria, ItemCompra
 @login_required
 def inicio(request):
     hoy = timezone.now().date()
+    services.generar_gastos_del_mes(request.user)
+    services.actualizar_estados_vencidos()
     contexto = {
         'proximos': services.gastos_proximos_a_vencer(request.user, dias=7),
         'urgentes': services.gastos_urgentes(request.user),
         'resumen': services.resumen_mensual(request.user, hoy.year, hoy.month),
     }
     return render(request, 'gastos/inicio.html', contexto)
-
 
 @login_required
 def lista_gastos(request):

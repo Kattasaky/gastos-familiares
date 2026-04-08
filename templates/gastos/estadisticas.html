@@ -1,0 +1,118 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Estadísticas{% endblock %}
+{% block contenido %}
+
+<div class="d-flex justify-content-between mb-4">
+    <h4>Estadísticas — {{ mes }}/{{ año }}</h4>
+    <a href="{% url 'exportar_excel' %}" class="btn btn-success">Exportar Excel</a>
+</div>
+
+<!-- Filtro por mes -->
+<form method="get" class="row mb-4">
+    <div class="col-md-3">
+        <select name="mes" class="form-select">
+            {% for m in "123456789101112"|make_list %}
+            <option value="{{ forloop.counter }}" 
+                {% if forloop.counter == mes %}selected{% endif %}>
+                Mes {{ forloop.counter }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="number" name="año" class="form-control" value="{{ año }}">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-dark">Filtrar</button>
+    </div>
+</form>
+
+<!-- Resumen -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h6>Ingresos</h6>
+                <h4>${{ total_ingresos|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-dark">
+            <div class="card-body">
+                <h6>Total egresos</h6>
+                <h4>${{ total_egresos|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6>Pendiente pagar</h6>
+                <h4>${{ total_pendiente|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white {% if balance >= 0 %}bg-info{% else %}bg-danger{% endif %}">
+            <div class="card-body">
+                <h6>Balance</h6>
+                <h4>${{ balance|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Todos los egresos del mes -->
+<h5>Egresos del mes</h5>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Categoría</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in gastos %}
+        <tr class="{% if g.estado == 'vencido' %}table-danger{% elif g.estado == 'pagado' %}table-success{% endif %}">
+            <td>{{ g.descripcion }}</td>
+            <td>${{ g.monto|floatformat:0 }}</td>
+            <td>{{ g.categoria }}</td>
+            <td>{{ g.fecha_vencimiento|default:"-" }}</td>
+            <td>{{ g.get_estado_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center">Sin egresos este mes</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Todos los ingresos del mes -->
+<h5 class="mt-4">Ingresos del mes</h5>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Tipo</th>
+            <th>Fecha</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in ingresos %}
+        <tr class="table-success">
+            <td>{{ i.descripcion }}</td>
+            <td>${{ i.monto|floatformat:0 }}</td>
+            <td>{{ i.get_tipo_display }}</td>
+            <td>{{ i.fecha }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center">Sin ingresos este mes</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

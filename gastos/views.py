@@ -142,6 +142,7 @@ def nuevo_recurrente(request):
                 frecuencia=request.POST.get('frecuencia', 'mensual'),
                 total_cuotas=request.POST.get('total_cuotas') or None,
                 prioridad=request.POST.get('prioridad', 'normal'),
+                dia_semana=request.POST.get('dia_semana') or None,
             )
             messages.success(request, 'Pago recurrente creado.')
             return redirect('lista_recurrentes')

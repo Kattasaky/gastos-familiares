@@ -13,11 +13,25 @@
             <label class="form-label">Monto (dejar vacío si es variable)</label>
             <input type="number" name="monto" class="form-control">
         </div>
-        <div class="mb-3">
-            <label class="form-label">Día del mes que se paga</label>
-            <input type="number" name="dia_pago" class="form-control" min="1" max="31" required>
-        </div>
-        <div class="mb-3">
+        <div class="mb-3" id="bloque-dia-mes">
+    <label class="form-label">Día del mes que se paga</label>
+    <input type="number" name="dia_pago" class="form-control" min="1" max="31">
+</div>
+
+<div class="mb-3" id="bloque-dia-semana" style="display:none">
+    <label class="form-label">Día de la semana</label>
+    <select name="dia_semana" class="form-select">
+        <option value="0">Lunes</option>
+        <option value="1">Martes</option>
+        <option value="2">Miércoles</option>
+        <option value="3">Jueves</option>
+        <option value="4">Viernes</option>
+        <option value="5">Sábado</option>
+        <option value="6">Domingo</option>
+        </select>
+       </div>
+  
+<div class="mb-3">
             <label class="form-label">Categoría</label>
             <select name="categoria" class="form-select">
                 <option value="">Sin categoría</option>
@@ -26,13 +40,14 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Frecuencia</label>
-            <select name="frecuencia" class="form-select">
-                <option value="mensual">Mensual fijo</option>
-                <option value="cuotas">En cuotas</option>
-            </select>
-        </div>
+       <div class="mb-3">
+    <label class="form-label">Frecuencia</label>
+    <select name="frecuencia" class="form-select">
+        <option value="mensual">Mensual fijo</option>
+        <option value="semanal">Semanal</option>
+        <option value="cuotas">En cuotas</option>
+    </select>
+</div>
         <div class="mb-3">
             <label class="form-label">Total de cuotas (solo si es en cuotas)</label>
             <input type="number" name="total_cuotas" class="form-control" min="1" max="18">
@@ -50,4 +65,17 @@
         <a href="{% url 'lista_recurrentes' %}" class="btn btn-outline-dark">Cancelar</a>
     </form>
 </div>
+
+<script>
+function actualizarCampos() {
+    const frecuencia = document.querySelector('[name=frecuencia]').value;
+    document.getElementById('bloque-dia-mes').style.display = 
+        frecuencia === 'mensual' || frecuencia === 'cuotas' ? 'block' : 'none';
+    document.getElementById('bloque-dia-semana').style.display = 
+        frecuencia === 'semanal' ? 'block' : 'none';
+}
+document.querySelector('[name=frecuencia]').addEventListener('change', actualizarCampos);
+actualizarCampos();
+</script>
+
 {% endblock %}

@@ -107,25 +107,28 @@ def limpiar_comprados(usuario):
 
 from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
 
-
-def crear_pago_recurrente(usuario, descripcion, dia_pago, monto=None,
+def crear_pago_recurrente(usuario, descripcion, dia_pago=None, monto=None,
                            categoria_id=None, frecuencia='mensual',
-                           total_cuotas=None, prioridad='normal'):
+                           total_cuotas=None, prioridad='normal',
+                           dia_semana=None):
     if not descripcion or not descripcion.strip():
         raise ValueError("La descripción no puede estar vacía.")
-    if not 1 <= int(dia_pago) <= 31:
-        raise ValueError("El día debe estar entre 1 y 31.")
+    if frecuencia == 'mensual' or frecuencia == 'cuotas':
+        if not dia_pago:
+            raise ValueError("Debes indicar el día del mes.")
+        if not 1 <= int(dia_pago) <= 31:
+            raise ValueError("El día debe estar entre 1 y 31.")
     return PagoRecurrente.objects.create(
         usuario=usuario,
         descripcion=descripcion.strip(),
         monto=monto or None,
         categoria_id=categoria_id,
         frecuencia=frecuencia,
-        dia_pago=dia_pago,
+        dia_pago=int(dia_pago) if dia_pago else None,
+        dia_semana=int(dia_semana) if dia_semana else None,
         total_cuotas=total_cuotas or None,
         prioridad=prioridad,
     )
-
 
 def generar_gastos_del_mes(usuario):
     """

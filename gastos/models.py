@@ -76,17 +76,20 @@ class ItemCompra(models.Model): #lista de compras, con nombre del producto, cant
         return f"{estado} {self.nombre} (x{self.cantidad})"
     
 class PagoRecurrente(models.Model):
+    
     FRECUENCIA_CHOICES = [
-        ('mensual', 'Mensual'),
-        ('cuotas', 'En cuotas'),
-    ]
+    ('mensual', 'Mensual'),
+    ('semanal', 'Semanal'),
+    ('cuotas', 'En cuotas'),
+]
 
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pagos_recurrentes')
     descripcion = models.CharField(max_length=200)
     monto = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
     frecuencia = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES, default='mensual')
-    dia_pago = models.PositiveIntegerField(help_text='Día del mes en que se paga')
+    dia_pago = models.PositiveIntegerField(null=True, blank=True, help_text='Día del mes 1-31')
+    dia_semana = models.PositiveIntegerField(null=True, blank=True, help_text='0=Lunes, 6=Domingo')
     total_cuotas = models.PositiveIntegerField(null=True, blank=True, help_text='Solo si es en cuotas')
     cuotas_pagadas = models.PositiveIntegerField(default=0)
     prioridad = models.CharField(max_length=20, choices=Gasto.PRIORIDAD_CHOICES, default='normal')

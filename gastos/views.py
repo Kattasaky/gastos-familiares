@@ -224,3 +224,20 @@ def pagar_cuota_mes(request, pk):
         else:
             messages.warning(request, 'No se encontró el gasto de este mes.')
     return redirect('lista_recurrentes')
+
+@login_required
+def editar_recurrente(request, pk):
+    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        # Actualiza solo los campos que envías en el formulario
+        descripcion = request.POST.get('descripcion')
+        monto = request.POST.get('monto')
+
+        if descripcion is not None:
+            pago.descripcion = descripcion
+        if monto is not None and monto != '':
+            pago.monto = monto
+
+        pago.save()
+        messages.success(request, 'Pago recurrente actualizado.')
+        return redirect('lista_recurrentes')

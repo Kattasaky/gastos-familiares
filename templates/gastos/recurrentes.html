@@ -5,9 +5,10 @@
     <h4>Pagos Recurrentes</h4>
     <a href="{% url 'nuevo_recurrente' %}" class="btn btn-dark">+ Nuevo</a>
 </div>
+
 <div class="table-responsive">
-<table class="table table-hover">
-    <thead>
+<table class="table table-hover table-sm align-middle">
+    <thead class="table-dark">
         <tr>
             <th>Descripción</th>
             <th>Monto</th>
@@ -21,41 +22,74 @@
     <tbody>
         {% for p in pagos %}
         <tr>
-         <td>
-            {% if p.frecuencia == 'semanal' %}
-              {% if p.dia_semana == 0 %}Lunes
-              {% elif p.dia_semana == 1 %}Martes
-              {% elif p.dia_semana == 2 %}Miércoles
-              {% elif p.dia_semana == 3 %}Jueves
-              {% elif p.dia_semana == 4 %}Viernes
-              {% elif p.dia_semana == 5 %}Sábado
-              {% elif p.dia_semana == 6 %}Domingo
-              {% endif %}
-            {% else %}
-              Día {{ p.dia_pago }}
-            {% endif %}
-        </td>
+            <!-- Descripción editable -->
+            <td>
+                <form method="post" action="{% url 'editar_recurrente' p.pk %}">
+                    {% csrf_token %}
+                    <input type="text" name="descripcion" value="{{ p.descripcion }}" 
+                           class="form-control form-control-sm">
+                    <button class="btn btn-sm btn-primary mt-1">Guardar</button>
+                </form>
+            </td>
+
+            <!-- Monto editable -->
+            <td>
+                <form method="post" action="{% url 'editar_recurrente' p.pk %}">
+                    {% csrf_token %}
+                    <input type="number" name="monto" value="{{ p.monto }}" 
+                           class="form-control form-control-sm">
+                    <button class="btn btn-sm btn-primary mt-1">Guardar</button>
+                </form>
+            </td>
+
+            <!-- Día pago -->
+            <td>
+                {% if p.frecuencia == 'semanal' %}
+                  {% if p.dia_semana == 0 %}Lunes
+                  {% elif p.dia_semana == 1 %}Martes
+                  {% elif p.dia_semana == 2 %}Miércoles
+                  {% elif p.dia_semana == 3 %}Jueves
+                  {% elif p.dia_semana == 4 %}Viernes
+                  {% elif p.dia_semana == 5 %}Sábado
+                  {% elif p.dia_semana == 6 %}Domingo
+                  {% endif %}
+                {% else %}
+                  Día {{ p.dia_pago }}
+                {% endif %}
+            </td>
+
+            <!-- Frecuencia -->
+            <td>{{ p.frecuencia|title }}</td>
+
+            <!-- Cuotas -->
+            <td>
                 {% if p.total_cuotas %}
                     {{ p.cuotas_pagadas }}/{{ p.total_cuotas }}
                 {% else %}
                     Indefinido
                 {% endif %}
             </td>
+
+            <!-- Prioridad -->
             <td>{{ p.get_prioridad_display }}</td>
-           <td>
-    <form method="post" action="{% url 'pagar_cuota_mes' p.pk %}">
-    {% csrf_token %}
-    <button class="btn btn-sm btn-success">
-        {% if p.frecuencia == 'semanal' %}Pagar semana
-        {% elif p.frecuencia == 'cuotas' %}Pagar cuota
-        {% else %}Pagar mes{% endif %}
-    </button>
-</form>
-    <form method="post" action="{% url 'eliminar_recurrente' p.pk %}" class="mt-1">
-        {% csrf_token %}
-        <button class="btn btn-sm btn-danger">Eliminar</button>
-    </form>
-</td>
+
+            <!-- Acciones -->
+            <td>
+                <div class="btn-group">
+                    <form method="post" action="{% url 'pagar_cuota_mes' p.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success">
+                            {% if p.frecuencia == 'semanal' %}Pagar semana
+                            {% elif p.frecuencia == 'cuotas' %}Pagar cuota
+                            {% else %}Pagar mes{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'eliminar_recurrente' p.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </div>
+            </td>
         </tr>
         {% empty %}
         <tr><td colspan="7" class="text-center">No hay pagos recurrentes</td></tr>

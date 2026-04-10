@@ -21,11 +21,20 @@
     <tbody>
         {% for p in pagos %}
         <tr>
-            <td>{{ p.descripcion }}</td>
-            <td>{% if p.monto %}${{ p.monto|floatformat:0 }}{% else %}Variable{% endif %}</td>
-            <td>Día {{ p.dia_pago }}</td>
-            <td>{{ p.get_frecuencia_display }}</td>
-            <td>
+         <td>
+            {% if p.frecuencia == 'semanal' %}
+              {% if p.dia_semana == 0 %}Lunes
+              {% elif p.dia_semana == 1 %}Martes
+              {% elif p.dia_semana == 2 %}Miércoles
+              {% elif p.dia_semana == 3 %}Jueves
+              {% elif p.dia_semana == 4 %}Viernes
+              {% elif p.dia_semana == 5 %}Sábado
+              {% elif p.dia_semana == 6 %}Domingo
+              {% endif %}
+            {% else %}
+              Día {{ p.dia_pago }}
+            {% endif %}
+        </td>
                 {% if p.total_cuotas %}
                     {{ p.cuotas_pagadas }}/{{ p.total_cuotas }}
                 {% else %}
@@ -35,9 +44,13 @@
             <td>{{ p.get_prioridad_display }}</td>
            <td>
     <form method="post" action="{% url 'pagar_cuota_mes' p.pk %}">
-        {% csrf_token %}
-        <button class="btn btn-sm btn-success">Pagar mes</button>
-    </form>
+    {% csrf_token %}
+    <button class="btn btn-sm btn-success">
+        {% if p.frecuencia == 'semanal' %}Pagar semana
+        {% elif p.frecuencia == 'cuotas' %}Pagar cuota
+        {% else %}Pagar mes{% endif %}
+    </button>
+</form>
     <form method="post" action="{% url 'eliminar_recurrente' p.pk %}" class="mt-1">
         {% csrf_token %}
         <button class="btn btn-sm btn-danger">Eliminar</button>

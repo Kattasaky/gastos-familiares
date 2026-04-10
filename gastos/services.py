@@ -70,18 +70,17 @@ def gastos_proximos_a_vencer(usuario, dias=7):
     return Gasto.objects.filter(
         usuario=usuario,
         estado='pendiente',
-    ).filter(
-        fecha_vencimiento__range=(hoy, limite)
+        fecha_vencimiento__isnull=False,
+        fecha_vencimiento__range=(hoy, limite),
     ).order_by('fecha_vencimiento')
+
 
 def gastos_urgentes(usuario):
     return Gasto.objects.filter(
         usuario=usuario,
-        prioridad='urgente',
+        prioridad__in=['urgente', 'alta'],
         estado__in=['pendiente', 'vencido'],
-    ).order_by('fecha_vencimiento')
-
-
+    ).order_by('prioridad', 'fecha_vencimiento')
 def agregar_item_compra(usuario, nombre, cantidad=1, valor_aprox=None, categoria_id=None):
     if not nombre or not nombre.strip():
         raise ValueError("El nombre no puede estar vacío.")
@@ -207,3 +206,18 @@ def resumen_ingresos_mes(usuario, año, mes):
         'por_tipo': list(por_tipo),
         'cantidad': ingresos.count(),
     }
+
+def pagar_cuota_mes(usuario, pago_recurrente_id):
+    from django.utils import timezone
+    hoy = timezone.now().date()
+    pago = PagoRecurrente.objects.get(id=pago_recurrente_id, usuario=usuario)
+    gasto = Gasto.objects.filter(
+        usuario=usuario,
+        descripcion=pago.descripcion,
+        fecha__year=hoy.year,
+        fecha__month=hoy.month,
+    ).first()
+    if gasto:
+        gasto.estado = 'pagado'
+        gasto.save(update_fields=['estado', 'actualizado_en'])
+    return gasto

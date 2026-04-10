@@ -214,3 +214,13 @@ def registro(request):
     else:
         form = UserCreationForm()
     return render(request, 'gastos/registro.html', {'form': form})
+
+@login_required
+def pagar_cuota_mes(request, pk):
+    if request.method == 'POST':
+        resultado = services.pagar_cuota_mes(request.user, pk)
+        if resultado:
+            messages.success(request, 'Cuota del mes marcada como pagada.')
+        else:
+            messages.warning(request, 'No se encontró el gasto de este mes.')
+    return redirect('lista_recurrentes')

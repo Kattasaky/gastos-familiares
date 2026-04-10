@@ -17,6 +17,7 @@ urlpatterns = [
     path('recurrentes/', views.lista_recurrentes, name='lista_recurrentes'),
     path('recurrentes/nuevo/', views.nuevo_recurrente, name='nuevo_recurrente'),
     path('recurrentes/<int:pk>/eliminar/', views.eliminar_recurrente, name='eliminar_recurrente'),
+    path('recurrentes/<int:pk>/pagar-cuota/', views.pagar_cuota_mes, name='pagar_cuota_mes'),
     path('ingresos/', views.lista_ingresos, name='lista_ingresos'),
     path('ingresos/nuevo/', views.nuevo_ingreso, name='nuevo_ingreso'),
     path('ingresos/<int:pk>/eliminar/', views.eliminar_ingreso, name='eliminar_ingreso'),

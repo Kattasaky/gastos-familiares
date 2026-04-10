@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from . import services
-from .models import Gasto, Categoria, ItemCompra
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
 
 
 @login_required
@@ -22,6 +22,7 @@ def inicio(request):
         'resumen': services.resumen_mensual(request.user, hoy.year, hoy.month),
     }
     return render(request, 'gastos/inicio.html', contexto)
+
 
 @login_required
 def lista_gastos(request):
@@ -123,8 +124,6 @@ def limpiar_comprados(request):
         messages.success(request, f'{n} ítem(s) eliminado(s).')
     return redirect('lista_compras')
 
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
-
 
 @login_required
 def lista_recurrentes(request):
@@ -154,90 +153,3 @@ def nuevo_recurrente(request):
     return render(request, 'gastos/form_recurrente.html', {
         'categorias': Categoria.objects.all()
     })
-
-
-@login_required
-def eliminar_recurrente(request, pk):
-    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        pago.delete()
-        messages.success(request, 'Pago recurrente eliminado.')
-    return redirect('lista_recurrentes')
-
-
-@login_required
-def lista_ingresos(request):
-    hoy = timezone.now().date()
-    ingresos = Ingreso.objects.filter(usuario=request.user)
-    resumen = services.resumen_ingresos_mes(request.user, hoy.year, hoy.month)
-    return render(request, 'gastos/ingresos.html', {
-        'ingresos': ingresos,
-        'resumen': resumen,
-    })
-
-
-@login_required
-def nuevo_ingreso(request):
-    if request.method == 'POST':
-        try:
-            services.crear_ingreso(
-                usuario=request.user,
-                descripcion=request.POST.get('descripcion', ''),
-                monto=request.POST.get('monto', 0),
-                tipo=request.POST.get('tipo', 'sueldo'),
-                fecha=request.POST.get('fecha') or None,
-                es_fijo=request.POST.get('es_fijo') == 'on',
-            )
-            messages.success(request, 'Ingreso registrado.')
-            return redirect('lista_ingresos')
-        except ValueError as e:
-            messages.error(request, str(e))
-    return render(request, 'gastos/form_ingreso.html')
-
-
-@login_required
-def eliminar_ingreso(request, pk):
-    ingreso = get_object_or_404(Ingreso, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        ingreso.delete()
-        messages.success(request, 'Ingreso eliminado.')
-    return redirect('lista_ingresos')
-
-def registro(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            usuario = form.save()
-            login(request, usuario)
-            messages.success(request, f'¡Bienvenid@ {usuario.username}! Cuenta creada exitosamente.')
-            return redirect('inicio')
-    else:
-        form = UserCreationForm()
-    return render(request, 'gastos/registro.html', {'form': form})
-
-@login_required
-def pagar_cuota_mes(request, pk):
-    if request.method == 'POST':
-        resultado = services.pagar_cuota_mes(request.user, pk)
-        if resultado:
-            messages.success(request, 'Cuota del mes marcada como pagada.')
-        else:
-            messages.warning(request, 'No se encontró el gasto de este mes.')
-    return redirect('lista_recurrentes')
-
-@login_required
-def editar_recurrente(request, pk):
-    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        # Actualiza solo los campos que envías en el formulario
-        descripcion = request.POST.get('descripcion')
-        monto = request.POST.get('monto')
-
-        if descripcion is not None:
-            pago.descripcion = descripcion
-        if monto is not None and monto != '':
-            pago.monto = monto
-
-        pago.save()
-        messages.success(request, 'Pago recurrente actualizado.')
-        return redirect('lista_recurrentes')

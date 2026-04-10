@@ -78,10 +78,11 @@ class ItemCompra(models.Model): #lista de compras, con nombre del producto, cant
 class PagoRecurrente(models.Model):
     
     FRECUENCIA_CHOICES = [
-    ('mensual', 'Mensual'),
-    ('semanal', 'Semanal'),
-    ('cuotas', 'En cuotas'),
-]
+        ('mensual', 'Mensual'),
+        ('semanal', 'Semanal'),
+        ('cuotas', 'En cuotas'),
+    ]
+
 
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pagos_recurrentes')
     descripcion = models.CharField(max_length=200)

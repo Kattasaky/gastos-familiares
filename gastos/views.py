@@ -161,3 +161,25 @@ def eliminar_recurrente(request, pk):
         pago.delete()
         messages.success(request, 'Pago recurrente eliminado.')
     return redirect('lista_recurrentes')
+
+@login_required
+def pagar_cuota_mes(request, pk):
+    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
+
+    # Incrementa el contador de cuotas pagadas
+    pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
+    pago.save()
+
+    # Registra el gasto en la tabla Gasto
+    Gasto.objects.create(
+        usuario=request.user,
+        descripcion=f"{pago.descripcion} - cuota {pago.cuotas_pagadas}/{pago.total_cuotas or ''}",
+        monto=pago.monto,
+        categoria=pago.categoria,
+        prioridad=pago.prioridad,
+        fecha_vencimiento=timezone.now().date(),
+        estado='pagado'
+    )
+
+    messages.success(request, 'Cuota marcada como pagada y registrada en gastos.')
+    return redirect('lista_recurrentes')

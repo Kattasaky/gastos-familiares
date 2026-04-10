@@ -183,3 +183,22 @@ def pagar_cuota_mes(request, pk):
 
     messages.success(request, 'Cuota marcada como pagada y registrada en gastos.')
     return redirect('lista_recurrentes')
+
+@login_required
+def editar_recurrente(request, pk):
+    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        pago.descripcion = request.POST.get('descripcion', pago.descripcion)
+        pago.monto = request.POST.get('monto') or None
+        pago.dia_pago = request.POST.get('dia_pago') or None
+        pago.dia_semana = request.POST.get('dia_semana') or None
+        pago.frecuencia = request.POST.get('frecuencia', pago.frecuencia)
+        pago.total_cuotas = request.POST.get('total_cuotas') or None
+        pago.prioridad = request.POST.get('prioridad', pago.prioridad)
+        pago.save()
+        messages.success(request, 'Pago recurrente actualizado.')
+        return redirect('lista_recurrentes')
+    return render(request, 'gastos/form_recurrente.html', {
+        'pago': pago,
+        'categorias': Categoria.objects.all(),
+    })

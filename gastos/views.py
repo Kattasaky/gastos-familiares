@@ -153,3 +153,11 @@ def nuevo_recurrente(request):
     return render(request, 'gastos/form_recurrente.html', {
         'categorias': Categoria.objects.all()
     })
+
+@login_required
+def eliminar_recurrente(request, pk):
+    pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        pago.delete()
+        messages.success(request, 'Pago recurrente eliminado.')
+    return redirect('lista_recurrentes')

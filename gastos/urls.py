@@ -25,3 +25,5 @@ urlpatterns = [
     path('registro/', views.registro, name='registro'),
 
 ]
+
+#comentario de prueba para ver si se sube al repositorio

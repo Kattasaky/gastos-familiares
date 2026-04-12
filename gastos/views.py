@@ -203,7 +203,7 @@ def editar_recurrente(request, pk):
         'categorias': Categoria.objects.all(),
     })
 
- @login_required
+@login_required
 def lista_ingresos(request):
     hoy = timezone.now().date()
     ingresos = Ingreso.objects.filter(usuario=request.user)

@@ -187,12 +187,12 @@ def editar_recurrente(request, pk):
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
     if request.method == 'POST':
         pago.descripcion = request.POST.get('descripcion', pago.descripcion)
-        pago.monto = request.POST.get('monto') or None
-        pago.dia_pago = request.POST.get('dia_pago') or None
-        pago.dia_semana = request.POST.get('dia_semana') or None
+        pago.monto = request.POST.get('monto') or pago.monto
+        pago.dia_pago = request.POST.get('dia_pago') or pago.dia_pago
         pago.frecuencia = request.POST.get('frecuencia', pago.frecuencia)
-        pago.total_cuotas = request.POST.get('total_cuotas') or None
+        pago.total_cuotas = request.POST.get('total_cuotas') or pago.total_cuotas
         pago.prioridad = request.POST.get('prioridad', pago.prioridad)
+        pago.dia_semana = request.POST.get('dia_semana') or pago.dia_semana
         pago.save()
         messages.success(request, 'Pago recurrente actualizado.')
         return redirect('lista_recurrentes')
@@ -200,6 +200,7 @@ def editar_recurrente(request, pk):
         'pago': pago,
         'categorias': Categoria.objects.all(),
     })
+
 
 
 @login_required

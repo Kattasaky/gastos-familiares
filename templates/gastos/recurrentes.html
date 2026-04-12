@@ -22,25 +22,11 @@
     <tbody>
         {% for p in pagos %}
         <tr>
-            <!-- Descripción editable -->
-            <td>
-                <form method="post" action="{% url 'editar_recurrente' p.pk %}">
-                    {% csrf_token %}
-                    <input type="text" name="descripcion" value="{{ p.descripcion }}" 
-                           class="form-control form-control-sm">
-                    <button class="btn btn-sm btn-primary mt-1">Guardar</button>
-                </form>
-            </td>
+            <!-- Descripción -->
+            <td>{{ p.descripcion }}</td>
 
-            <!-- Monto editable -->
-            <td>
-                <form method="post" action="{% url 'editar_recurrente' p.pk %}">
-                    {% csrf_token %}
-                    <input type="number" name="monto" value="{{ p.monto }}" 
-                           class="form-control form-control-sm">
-                    <button class="btn btn-sm btn-primary mt-1">Guardar</button>
-                </form>
-            </td>
+            <!-- Monto -->
+            <td>{{ p.monto }}</td>
 
             <!-- Día pago -->
             <td>
@@ -88,6 +74,8 @@
                         {% csrf_token %}
                         <button class="btn btn-sm btn-danger">Eliminar</button>
                     </form>
+                    <!-- Botón Editar -->
+                    <a href="{% url 'editar_recurrente' p.pk %}" class="btn btn-sm btn-primary">Editar</a>
                 </div>
             </td>
         </tr>

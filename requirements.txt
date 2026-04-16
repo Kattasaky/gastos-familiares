@@ -1,5 +1,7 @@
-django>=6.0,<7.0 # instala django 
-openpyxl>=3.1 #instala openpyxl (libreria) para manipular arquivos Excel
-whitenoise>=6.6 #sirve los archivos estáticos en producción
-gunicorn>=21.0 #es un servidor WSGI para aplicaciones Python, recomendado para producción
-python-decouple>=3.8 #permite manejar configuraciones sensibles (como claves secretas) a través de variables de entorno
+asgiref==3.11.1
+Django==6.0.4
+et_xmlfile==2.0.0
+openpyxl==3.1.5
+python-decouple==3.8
+sqlparse==0.5.5
+tzdata==2026.1

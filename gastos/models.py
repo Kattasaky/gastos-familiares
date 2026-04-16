@@ -131,3 +131,84 @@ class Ingreso(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} — ${self.monto:,.0f}"
+
+
+class Prestamo(models.Model):
+    TIPO_CHOICES = [
+        ('recibido', 'Me prestaron a mí'),   # yo debo dinero
+        ('otorgado', 'Yo presté dinero'),     # me deben a mí
+    ]
+    ESTADO_CHOICES = [
+        ('vigente', 'Vigente'),
+        ('saldado', 'Saldado'),
+        ('vencido', 'Vencido'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prestamos')
+    
+    # Quién es la otra persona involucrada
+    persona = models.CharField(max_length=150, help_text='Nombre de quien prestó o a quien prestaste')
+    
+    # Descripción del motivo
+    concepto = models.CharField(max_length=200, help_text='Ej: Gastos médicos, Arriendo, Vacaciones')
+    
+    # Monto original del préstamo
+    monto_total = models.DecimalField(max_digits=12, decimal_places=0)
+    
+    # Cuánto se ha pagado hasta ahora (se actualiza con cada pago)
+    monto_pagado = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='recibido')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='vigente')
+    
+    fecha_prestamo = models.DateField(default=timezone.now)
+    fecha_vencimiento = models.DateField(null=True, blank=True, help_text='Fecha límite para pagar (opcional)')
+    
+    notas = models.TextField(blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_prestamo']
+        verbose_name = 'Préstamo'
+        verbose_name_plural = 'Préstamos'
+
+    def __str__(self):
+        return f"{self.persona} — ${self.monto_total:,.0f} ({self.get_tipo_display()})"
+
+    # ---- Propiedades calculadas (no se guardan en BD) ----
+
+    @property
+    def monto_adeudado(self):
+        """Cuánto queda por pagar. Se calcula siempre al vuelo."""
+        return self.monto_total - self.monto_pagado
+
+    @property
+    def porcentaje_pagado(self):
+        """Para la barra de progreso en el template."""
+        if self.monto_total == 0:
+            return 0
+        return int((self.monto_pagado / self.monto_total) * 100)
+
+    @property
+    def esta_saldado(self):
+        return self.monto_pagado >= self.monto_total
+
+    @property
+    def esta_vencido(self):
+        if self.fecha_vencimiento and self.estado == 'vigente':
+            return self.fecha_vencimiento < timezone.now().date()
+        return False
+    
+class PagoPrestamo(models.Model):
+    """Cada vez que se registra un pago parcial o total de un préstamo."""
+    prestamo = models.ForeignKey(Prestamo, on_delete=models.CASCADE, related_name='pagos')
+    monto = models.DecimalField(max_digits=12, decimal_places=0)
+    fecha = models.DateField(default=timezone.now)
+    notas = models.CharField(max_length=200, blank=True, help_text='Ej: transferencia, efectivo')
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"${self.monto:,.0f} el {self.fecha}"

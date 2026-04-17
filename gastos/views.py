@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from . import services
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo
 
 
 @login_required
@@ -243,10 +243,97 @@ def eliminar_ingreso(request, pk):
 
 
 def registro(request):
+   
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             usuario = form.save()
             login(request, usuario)
-            messages.success(request, f'Bienvenido, {usuario.username}!')
+            messages.success(request, f'¡Bienvenida, {usuario.username}! Tu cuenta fue creada.')
             return redirect('inicio')
+        # Si llega aquí, el form tiene errores — caemos al return de abajo
+    else:
+        form = UserCreationForm()  # formulario vacío para GET
+    
+    # Tanto en GET como en POST inválido, renderizamos el template
+    return render(request, 'gastos/registro.html', {'form': form})
+
+@login_required
+def lista_prestamos(request):
+ 
+    services.actualizar_estados_prestamos_vencidos()
+    
+    prestamos = Prestamo.objects.filter(usuario=request.user).prefetch_related('pagos')
+    
+    # Separamos en dos listas para mostrar en secciones distintas
+    recibidos = prestamos.filter(tipo='recibido')
+    otorgados = prestamos.filter(tipo='otorgado')
+    resumen = services.resumen_prestamos(request.user)
+    
+    return render(request, 'gastos/prestamos.html', {
+        'recibidos': recibidos,
+        'otorgados': otorgados,
+        'resumen': resumen,
+    })
+
+
+@login_required
+def nuevo_prestamo(request):
+    if request.method == 'POST':
+        try:
+            services.crear_prestamo(
+                usuario=request.user,
+                persona=request.POST.get('persona', ''),
+                concepto=request.POST.get('concepto', ''),
+                monto_total=request.POST.get('monto_total', 0),
+                tipo=request.POST.get('tipo', 'recibido'),
+                fecha_prestamo=request.POST.get('fecha_prestamo') or None,
+                fecha_vencimiento=request.POST.get('fecha_vencimiento') or None,
+                notas=request.POST.get('notas', ''),
+            )
+            messages.success(request, 'Préstamo registrado correctamente.')
+            return redirect('lista_prestamos')
+        except ValueError as e:
+            messages.error(request, str(e))
+    
+    return render(request, 'gastos/form_prestamo.html')
+
+
+@login_required
+def registrar_pago_prestamo(request, pk):
+  
+    if request.method == 'POST':
+        try:
+            services.registrar_pago_prestamo(
+                usuario=request.user,
+                prestamo_id=pk,
+                monto=request.POST.get('monto', 0),
+                fecha=request.POST.get('fecha') or None,
+                notas=request.POST.get('notas', ''),
+            )
+            messages.success(request, 'Pago registrado correctamente.')
+        except (ValueError, Prestamo.DoesNotExist) as e:
+            messages.error(request, str(e))
+    
+    return redirect('lista_prestamos')
+
+
+@login_required
+def eliminar_prestamo(request, pk):
+    prestamo = get_object_or_404(Prestamo, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        prestamo.delete()
+        messages.success(request, 'Préstamo eliminado.')
+    return redirect('lista_prestamos')
+
+
+@login_required
+def detalle_prestamo(request, pk):
+ 
+    prestamo = get_object_or_404(Prestamo, pk=pk, usuario=request.user)
+    pagos = prestamo.pagos.all()  # ya ordenados por fecha DESC (definido en Meta)
+    
+    return render(request, 'gastos/detalle_prestamo.html', {
+        'prestamo': prestamo,
+        'pagos': pagos,
+    })

@@ -3,7 +3,7 @@
 # para que puedan ser gestionados fácilmente a través de la interfaz de administración.
 # Esto incluye la personalización de cómo se muestran los modelos, qué campos se pueden buscar y filtrar, etc.
 from django.contrib import admin
-from .models import Gasto, Categoria, ItemCompra
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
@@ -31,3 +31,13 @@ class PagoRecurrenteAdmin(admin.ModelAdmin):
 class IngresoAdmin(admin.ModelAdmin):
     list_display = ['descripcion', 'monto', 'tipo', 'fecha', 'es_fijo']
     list_filter = ['tipo', 'es_fijo']
+
+@admin.register(Prestamo)
+class PrestamoAdmin(admin.ModelAdmin):
+    list_display = ['persona', 'concepto', 'monto_total', 'monto_pagado', 'tipo', 'estado', 'fecha_prestamo']
+    list_filter = ['tipo', 'estado']
+    search_fields = ['persona', 'concepto']
+
+@admin.register(PagoPrestamo)
+class PagoPrestamoAdmin(admin.ModelAdmin):
+    list_display = ['prestamo', 'monto', 'fecha', 'notas']

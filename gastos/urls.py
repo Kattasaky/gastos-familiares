@@ -23,6 +23,11 @@ urlpatterns = [
     path('ingresos/nuevo/', views.nuevo_ingreso, name='nuevo_ingreso'),
     path('ingresos/<int:pk>/eliminar/', views.eliminar_ingreso, name='eliminar_ingreso'),
     path('registro/', views.registro, name='registro'),
+    path('prestamos/', views.lista_prestamos, name='lista_prestamos'),
+    path('prestamos/nuevo/', views.nuevo_prestamo, name='nuevo_prestamo'),
+    path('prestamos/<int:pk>/pagar/', views.registrar_pago_prestamo, name='registrar_pago_prestamo'),
+    path('prestamos/<int:pk>/eliminar/', views.eliminar_prestamo, name='eliminar_prestamo'),
+    path('prestamos/<int:pk>/detalle/', views.detalle_prestamo, name='detalle_prestamo'),
 
 ]
 

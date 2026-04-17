@@ -4,7 +4,7 @@
 from decimal import Decimal
 from django.utils import timezone
 from django.db.models import Sum, Count
-from .models import Gasto, Categoria, ItemCompra
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo
 
 
 def crear_gasto(usuario, descripcion, monto, categoria_id=None,
@@ -221,3 +221,121 @@ def pagar_cuota_mes(usuario, pago_recurrente_id):
         gasto.estado = 'pagado'
         gasto.save(update_fields=['estado', 'actualizado_en'])
     return gasto
+
+
+
+def crear_prestamo(usuario, persona, concepto, monto_total,
+                   tipo='recibido', fecha_prestamo=None,
+                   fecha_vencimiento=None, notas=''):
+    """
+    Crea un préstamo nuevo.
+    Validamos antes de tocar la base de datos — fail fast.
+    """
+    if not persona or not persona.strip():
+        raise ValueError("El nombre de la persona no puede estar vacío.")
+    if not concepto or not concepto.strip():
+        raise ValueError("El concepto no puede estar vacío.")
+    
+    from decimal import Decimal
+    if Decimal(str(monto_total)) <= 0:
+        raise ValueError("El monto debe ser mayor a cero.")
+
+    return Prestamo.objects.create(
+        usuario=usuario,
+        persona=persona.strip(),
+        concepto=concepto.strip(),
+        monto_total=monto_total,
+        tipo=tipo,
+        fecha_prestamo=fecha_prestamo or timezone.now().date(),
+        fecha_vencimiento=fecha_vencimiento or None,
+        notas=notas,
+    )
+
+
+def registrar_pago_prestamo(usuario, prestamo_id, monto, fecha=None, notas=''):
+    """
+    Registra un pago parcial o total de un préstamo.
+    
+    ¿Qué hace internamente?
+    1. Busca el préstamo (y verifica que pertenezca al usuario — seguridad)
+    2. Valida que no se pague más de lo adeudado
+    3. Crea el registro de pago (historial)
+    4. Actualiza el monto_pagado en el préstamo
+    5. Si ya está saldado, cambia el estado automáticamente
+    """
+    from decimal import Decimal
+    
+    prestamo = Prestamo.objects.get(id=prestamo_id, usuario=usuario)
+    monto = Decimal(str(monto))
+    
+    if monto <= 0:
+        raise ValueError("El monto del pago debe ser mayor a cero.")
+    
+    if monto > prestamo.monto_adeudado:
+        raise ValueError(
+            f"El pago (${monto:,.0f}) supera el monto adeudado (${prestamo.monto_adeudado:,.0f})."
+        )
+    
+    # Crear el registro histórico del pago
+    PagoPrestamo.objects.create(
+        prestamo=prestamo,
+        monto=monto,
+        fecha=fecha or timezone.now().date(),
+        notas=notas,
+    )
+    
+    # Actualizar el acumulado en el préstamo
+    prestamo.monto_pagado += monto
+    
+    # ¿Quedó saldado?
+    if prestamo.monto_pagado >= prestamo.monto_total:
+        prestamo.estado = 'saldado'
+    
+    # update_fields es más eficiente: solo actualiza esas columnas en BD
+    prestamo.save(update_fields=['monto_pagado', 'estado', 'actualizado_en'])
+    
+    return prestamo
+
+
+def resumen_prestamos(usuario):
+    """
+    Devuelve un resumen de todos los préstamos del usuario.
+    Útil para la página de inicio y el dashboard.
+    """
+    from django.db.models import Sum
+    
+    prestamos = Prestamo.objects.filter(usuario=usuario, estado='vigente')
+    
+    # Lo que yo debo
+    debo = prestamos.filter(tipo='recibido').aggregate(
+        total=Sum('monto_total'), pagado=Sum('monto_pagado')
+    )
+    
+    # Lo que me deben
+    me_deben = prestamos.filter(tipo='otorgado').aggregate(
+        total=Sum('monto_total'), pagado=Sum('monto_pagado')
+    )
+    
+    def adeudado(agg):
+        total = agg['total'] or 0
+        pagado = agg['pagado'] or 0
+        return total - pagado
+    
+    return {
+        'total_que_debo': adeudado(debo),
+        'total_que_me_deben': adeudado(me_deben),
+        'cantidad_vigentes': prestamos.count(),
+    }
+
+
+def actualizar_estados_prestamos_vencidos():
+    """
+    Igual que con los gastos, recorre los préstamos vigentes
+    y marca como vencido si pasó la fecha límite.
+    Esta función se llama desde la vista 'inicio' cada vez que alguien entra.
+    """
+    hoy = timezone.now().date()
+    return Prestamo.objects.filter(
+        estado='vigente',
+        fecha_vencimiento__lt=hoy,
+    ).update(estado='vencido')

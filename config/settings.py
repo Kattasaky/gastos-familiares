@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*'] #sirve para permitir que la aplicación sea accesible desde cualquier host, lo cual es útil durante el desarrollo pero no recomendado para producción.
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://gastos-familiares-wldj.onrender.com"
+]
+
 
 # Application definition
 

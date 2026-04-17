@@ -212,3 +212,91 @@ class PagoPrestamo(models.Model):
 
     def __str__(self):
         return f"${self.monto:,.0f} el {self.fecha}"
+
+class MetaAhorro(models.Model):
+ 
+    ICONO_CHOICES = [
+        ('🏖️', 'Viaje'),
+        ('🏠', 'Casa'),
+        ('🚗', 'Auto'),
+        ('🎓', 'Educación'),
+        ('🏥', 'Emergencia médica'),
+        ('💼', 'Negocio'),
+        ('🎁', 'Regalo'),
+        ('📱', 'Tecnología'),
+        ('💰', 'General'),
+        ('🌟', 'Otro'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metas_ahorro')
+    nombre = models.CharField(max_length=150, help_text='Ej: Viaje a Buenos Aires')
+    icono = models.CharField(max_length=5, choices=ICONO_CHOICES, default='💰')
+    monto_objetivo = models.DecimalField(max_digits=12, decimal_places=0)
+    fecha_objetivo = models.DateField(null=True, blank=True, help_text='¿Para cuándo querés tenerlo?')
+    descripcion = models.TextField(blank=True)
+    activa = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creado_en']
+        verbose_name = 'Meta de ahorro'
+        verbose_name_plural = 'Metas de ahorro'
+
+    def __str__(self):
+        return f"{self.icono} {self.nombre}"
+
+    @property
+    def monto_actual(self):
+        """Suma todos los aportes. Se recalcula cada vez, sin guardar."""
+        from django.db.models import Sum
+        resultado = self.aportes.aggregate(total=Sum('monto'))['total']
+        return resultado or 0
+
+    @property
+    def monto_restante(self):
+        return self.monto_objetivo - self.monto_actual
+
+    @property
+    def porcentaje(self):
+        if self.monto_objetivo == 0:
+            return 0
+        pct = int((self.monto_actual / self.monto_objetivo) * 100)
+        return min(pct, 100)  # no puede superar 100%
+
+    @property
+    def completada(self):
+        return self.monto_actual >= self.monto_objetivo
+
+    @property
+    def dias_restantes(self):
+        if self.fecha_objetivo:
+            delta = self.fecha_objetivo - timezone.now().date()
+            return delta.days
+        return None
+
+    @property
+    def ahorro_mensual_necesario(self):
+        """
+        Calcula cuánto hay que ahorrar por mes para llegar al objetivo.
+        Útil para mostrar "necesitás ahorrar X por mes".
+        Solo tiene sentido si hay fecha objetivo y monto restante > 0.
+        """
+        dias = self.dias_restantes
+        if dias and dias > 0 and self.monto_restante > 0:
+            meses = max(dias / 30, 1)
+            return int(self.monto_restante / meses)
+        return None
+
+
+class AporteMeta(models.Model):
+    """Cada vez que la usuaria deposita algo a su meta."""
+    meta = models.ForeignKey(MetaAhorro, on_delete=models.CASCADE, related_name='aportes')
+    monto = models.DecimalField(max_digits=12, decimal_places=0)
+    fecha = models.DateField(default=timezone.now)
+    notas = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"${self.monto:,.0f} → {self.meta.nombre} ({self.fecha})"

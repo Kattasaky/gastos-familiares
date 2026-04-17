@@ -4,7 +4,7 @@
 from decimal import Decimal
 from django.utils import timezone
 from django.db.models import Sum, Count
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo, MetaAhorro, AporteMeta
 
 
 def crear_gasto(usuario, descripcion, monto, categoria_id=None,
@@ -339,3 +339,35 @@ def actualizar_estados_prestamos_vencidos():
         estado='vigente',
         fecha_vencimiento__lt=hoy,
     ).update(estado='vencido')
+
+def crear_meta(usuario, nombre, monto_objetivo, icono='💰',
+               fecha_objetivo=None, descripcion=''):
+    if not nombre or not nombre.strip():
+        raise ValueError("El nombre no puede estar vacío.")
+    from decimal import Decimal
+    if Decimal(str(monto_objetivo)) <= 0:
+        raise ValueError("El monto objetivo debe ser mayor a cero.")
+    return MetaAhorro.objects.create(
+        usuario=usuario,
+        nombre=nombre.strip(),
+        monto_objetivo=monto_objetivo,
+        icono=icono,
+        fecha_objetivo=fecha_objetivo or None,
+        descripcion=descripcion,
+    )
+
+
+def registrar_aporte(usuario, meta_id, monto, fecha=None, notas=''):
+    from decimal import Decimal
+    meta = MetaAhorro.objects.get(id=meta_id, usuario=usuario)
+    monto = Decimal(str(monto))
+    if monto <= 0:
+        raise ValueError("El aporte debe ser mayor a cero.")
+    
+    AporteMeta.objects.create(
+        meta=meta,
+        monto=monto,
+        fecha=fecha or timezone.now().date(),
+        notas=notas,
+    )
+    return meta

@@ -1,128 +1,17 @@
-{% extends 'gastos/base.html' %}
-{% block titulo %}Estadísticas{% endblock %}
-{% block contenido %}
+{% extends 'gastos/base.html' %} {% block titulo %}Estadísticas{% endblock %} {% block contenido %}
+📊 Estadísticas — {{ mes }}/{{ año }}
+⬇️ Exportar Excel
 
-<div class="d-flex justify-content-between mb-4">
-    <h4>Estadísticas — {{ mes }}/{{ año }}</h4>
-    <a href="{% url 'exportar_excel' %}" class="btn btn-success">Exportar Excel</a>
-</div>
-
-<!-- Filtro por mes -->
-<form method="get" class="row mb-4">
-    <div class="col-md-3">
-        <select name="mes" class="form-select">
-            <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
-            <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
-            <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
-            <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
-            <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
-            <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
-            <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
-            <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
-            <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
-            <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
-            <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
-            <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <input type="number" name="año" class="form-control" value="{{ año }}">
-    </div>
-    <div class="col-md-2">
-        <button class="btn btn-dark">Filtrar</button>
-    </div>
-</form>
-
-<!-- Resumen -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <h6>Ingresos</h6>
-                <h4>${{ total_ingresos|floatformat:0 }}</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-dark">
-            <div class="card-body">
-                <h6>Total egresos</h6>
-                <h4>${{ total_egresos|floatformat:0 }}</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning">
-            <div class="card-body">
-                <h6>Pendiente pagar</h6>
-                <h4>${{ total_pendiente|floatformat:0 }}</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white {% if balance >= 0 %}bg-info{% else %}bg-danger{% endif %}">
-            <div class="card-body">
-                <h6>Balance</h6>
-                <h4>${{ balance|floatformat:0 }}</h4>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Todos los egresos del mes -->
-<h5>Egresos del mes</h5>
-<div class="table-responsive">
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Descripción</th>
-            <th>Monto</th>
-            <th>Categoría</th>
-            <th>Vencimiento</th>
-            <th>Estado</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for g in gastos %}
-        <tr class="{% if g.estado == 'vencido' %}table-danger{% elif g.estado == 'pagado' %}table-success{% endif %}">
-            <td>{{ g.descripcion }}</td>
-            <td>${{ g.monto|floatformat:0 }}</td>
-            <td>{{ g.categoria }}</td>
-            <td>{{ g.fecha_vencimiento|default:"-" }}</td>
-            <td>{{ g.get_estado_display }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="text-center">Sin egresos este mes</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
-
-<!-- Todos los ingresos del mes -->
-<h5 class="mt-4">Ingresos del mes</h5>
-<div class="table-responsive">
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Descripción</th>
-            <th>Monto</th>
-            <th>Tipo</th>
-            <th>Fecha</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for i in ingresos %}
-        <tr class="table-success">
-            <td>{{ i.descripcion }}</td>
-            <td>${{ i.monto|floatformat:0 }}</td>
-            <td>{{ i.get_tipo_display }}</td>
-            <td>{{ i.fecha }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4" class="text-center">Sin ingresos este mes</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
-
-{% endblock %}
+{{ nombre }}
+Filtrar
+Ingresos
+${{ total_ingresos|floatformat:0 }}
+Total egresos
+${{ total_egresos|floatformat:0 }}
+Pendiente
+${{ total_pendiente|floatformat:0 }}
+Balance
+${{ balance|floatformat:0 }}
+{% if por_categoria or ingresos_por_tipo %}
+{% if por_categoria %}
+Egresos por categoría

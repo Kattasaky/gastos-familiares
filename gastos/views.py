@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from . import services
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo
+from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo, MetaAhorro, AporteMeta
 
 
 @login_required
@@ -337,3 +337,77 @@ def detalle_prestamo(request, pk):
         'prestamo': prestamo,
         'pagos': pagos,
     })
+
+@login_required
+def lista_metas(request):
+    """
+    Muestra todas las metas de ahorro.
+    Separamos activas de completadas para que sea más clara la vista.
+    """
+    metas = MetaAhorro.objects.filter(usuario=request.user).prefetch_related('aportes')
+    activas = metas.filter(activa=True)
+    completadas = metas.filter(activa=False)
+    
+    return render(request, 'gastos/metas.html', {
+        'activas': activas,
+        'completadas': completadas,
+    })
+
+
+@login_required
+def nueva_meta(request):
+    if request.method == 'POST':
+        try:
+            services.crear_meta(
+                usuario=request.user,
+                nombre=request.POST.get('nombre', ''),
+                monto_objetivo=request.POST.get('monto_objetivo', 0),
+                icono=request.POST.get('icono', '💰'),
+                fecha_objetivo=request.POST.get('fecha_objetivo') or None,
+                descripcion=request.POST.get('descripcion', ''),
+            )
+            messages.success(request, 'Meta de ahorro creada.')
+            return redirect('lista_metas')
+        except ValueError as e:
+            messages.error(request, str(e))
+    
+    # Opciones de iconos para el selector
+    iconos = MetaAhorro.ICONO_CHOICES
+    return render(request, 'gastos/form_meta.html', {'iconos': iconos})
+
+
+@login_required
+def registrar_aporte(request, pk):
+    if request.method == 'POST':
+        try:
+            services.registrar_aporte(
+                usuario=request.user,
+                meta_id=pk,
+                monto=request.POST.get('monto', 0),
+                fecha=request.POST.get('fecha') or None,
+                notas=request.POST.get('notas', ''),
+            )
+            messages.success(request, '¡Aporte registrado! Seguís avanzando 💪')
+        except (ValueError, MetaAhorro.DoesNotExist) as e:
+            messages.error(request, str(e))
+    return redirect('lista_metas')
+
+
+@login_required
+def eliminar_meta(request, pk):
+    meta = get_object_or_404(MetaAhorro, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        meta.delete()
+        messages.success(request, 'Meta eliminada.')
+    return redirect('lista_metas')
+
+
+@login_required
+def archivar_meta(request, pk):
+    """Marcar como completada/archivada sin eliminar el historial."""
+    meta = get_object_or_404(MetaAhorro, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        meta.activa = False
+        meta.save(update_fields=['activa'])
+        messages.success(request, '¡Meta archivada! 🎉')
+    return redirect('lista_metas')

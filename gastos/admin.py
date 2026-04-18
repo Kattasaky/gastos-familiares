@@ -1,13 +1,17 @@
 
-#registra modelos en el panel de admin de Django 
-# para que puedan ser gestionados fácilmente a través de la interfaz de administración.
-# Esto incluye la personalización de cómo se muestran los modelos, qué campos se pueden buscar y filtrar, etc.
 from django.contrib import admin
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo, MetaAhorro, AporteMeta
+from .models import (
+    Gasto, Categoria, ItemCompra,
+    PagoRecurrente, Ingreso,
+    Prestamo, PagoPrestamo,
+    MetaAhorro, AporteMeta,
+)
+
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'icono', 'color']
+
 
 @admin.register(Gasto)
 class GastoAdmin(admin.ModelAdmin):
@@ -15,37 +19,42 @@ class GastoAdmin(admin.ModelAdmin):
     list_filter = ['estado', 'prioridad', 'categoria']
     search_fields = ['descripcion']
 
+
 @admin.register(ItemCompra)
 class ItemCompraAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'cantidad', 'comprado', 'usuario']
     list_filter = ['comprado']
 
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso
 
 @admin.register(PagoRecurrente)
 class PagoRecurrenteAdmin(admin.ModelAdmin):
     list_display = ['descripcion', 'monto', 'frecuencia', 'dia_pago', 'activo']
     list_filter = ['frecuencia', 'activo']
 
+
 @admin.register(Ingreso)
 class IngresoAdmin(admin.ModelAdmin):
     list_display = ['descripcion', 'monto', 'tipo', 'fecha', 'es_fijo']
     list_filter = ['tipo', 'es_fijo']
 
+
 @admin.register(Prestamo)
 class PrestamoAdmin(admin.ModelAdmin):
-    list_display = ['persona', 'concepto', 'monto_total', 'monto_pagado', 'tipo', 'estado', 'fecha_prestamo']
+    list_display = ['persona', 'concepto', 'monto_total', 'monto_pagado', 'tipo', 'estado']
     list_filter = ['tipo', 'estado']
     search_fields = ['persona', 'concepto']
+
 
 @admin.register(PagoPrestamo)
 class PagoPrestamoAdmin(admin.ModelAdmin):
     list_display = ['prestamo', 'monto', 'fecha', 'notas']
 
+
 @admin.register(MetaAhorro)
 class MetaAhorroAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'monto_objetivo', 'icono', 'fecha_objetivo', 'activa']
     list_filter = ['activa']
+
 
 @admin.register(AporteMeta)
 class AporteMetaAdmin(admin.ModelAdmin):

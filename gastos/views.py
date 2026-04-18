@@ -1,6 +1,3 @@
-# Las vistas reciben las peticiones del navegador, llaman a los servicios y devuelven las páginas HTML
-# El decorador @login_required protege cada página — si no estás logueada te manda al login.
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
@@ -8,21 +5,34 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from . import services
-from .models import Gasto, Categoria, ItemCompra, PagoRecurrente, Ingreso, Prestamo, PagoPrestamo, MetaAhorro, AporteMeta
+from .models import (
+    Gasto, Categoria, ItemCompra,
+    PagoRecurrente, Ingreso,
+    Prestamo, PagoPrestamo,
+    MetaAhorro, AporteMeta,
+)
 
+
+# ─────────────────────────────────────────────
+# INICIO
+# ─────────────────────────────────────────────
 
 @login_required
 def inicio(request):
     hoy = timezone.now().date()
     services.generar_gastos_del_mes(request.user)
     services.actualizar_estados_vencidos()
-    contexto = {
+    services.actualizar_estados_prestamos_vencidos()
+    return render(request, 'gastos/inicio.html', {
         'proximos': services.gastos_proximos_a_vencer(request.user, dias=7),
         'urgentes': services.gastos_urgentes(request.user),
         'resumen': services.resumen_mensual(request.user, hoy.year, hoy.month),
-    }
-    return render(request, 'gastos/inicio.html', contexto)
+    })
 
+
+# ─────────────────────────────────────────────
+# GASTOS
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_gastos(request):
@@ -48,8 +58,7 @@ def nuevo_gasto(request):
             return redirect('lista_gastos')
         except (ValueError, Exception) as e:
             messages.error(request, str(e))
-    categorias = Categoria.objects.all()
-    return render(request, 'gastos/formulario.html', {'categorias': categorias})
+    return render(request, 'gastos/formulario.html', {'categorias': Categoria.objects.all()})
 
 
 @login_required
@@ -85,6 +94,10 @@ def eliminar_gasto(request, pk):
         messages.success(request, 'Gasto eliminado.')
     return redirect('lista_gastos')
 
+
+# ─────────────────────────────────────────────
+# LISTA DE COMPRAS
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_compras(request):
@@ -124,6 +137,10 @@ def limpiar_comprados(request):
         messages.success(request, f'{n} ítem(s) eliminado(s).')
     return redirect('lista_compras')
 
+
+# ─────────────────────────────────────────────
+# PAGOS RECURRENTES
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_recurrentes(request):
@@ -171,14 +188,14 @@ def pagar_cuota_mes(request, pk):
     pago.save()
     Gasto.objects.create(
         usuario=request.user,
-        descripcion=f"{pago.descripcion} - cuota {pago.cuotas_pagadas}/{pago.total_cuotas or ''}",
+        descripcion=f"{pago.descripcion} - cuota {pago.cuotas_pagadas}/{pago.total_cuotas or '∞'}",
         monto=pago.monto,
         categoria=pago.categoria,
         prioridad=pago.prioridad,
         fecha_vencimiento=timezone.now().date(),
-        estado='pagado'
+        estado='pagado',
     )
-    messages.success(request, 'Cuota marcada como pagada y registrada en gastos.')
+    messages.success(request, 'Cuota marcada como pagada.')
     return redirect('lista_recurrentes')
 
 
@@ -202,6 +219,9 @@ def editar_recurrente(request, pk):
     })
 
 
+# ─────────────────────────────────────────────
+# INGRESOS
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_ingresos(request):
@@ -242,38 +262,18 @@ def eliminar_ingreso(request, pk):
     return redirect('lista_ingresos')
 
 
-def registro(request):
-   
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            usuario = form.save()
-            login(request, usuario)
-            messages.success(request, f'¡Bienvenida, {usuario.username}! Tu cuenta fue creada.')
-            return redirect('inicio')
-        # Si llega aquí, el form tiene errores — caemos al return de abajo
-    else:
-        form = UserCreationForm()  # formulario vacío para GET
-    
-    # Tanto en GET como en POST inválido, renderizamos el template
-    return render(request, 'gastos/registro.html', {'form': form})
+# ─────────────────────────────────────────────
+# PRÉSTAMOS
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_prestamos(request):
- 
     services.actualizar_estados_prestamos_vencidos()
-    
     prestamos = Prestamo.objects.filter(usuario=request.user).prefetch_related('pagos')
-    
-    # Separamos en dos listas para mostrar en secciones distintas
-    recibidos = prestamos.filter(tipo='recibido')
-    otorgados = prestamos.filter(tipo='otorgado')
-    resumen = services.resumen_prestamos(request.user)
-    
     return render(request, 'gastos/prestamos.html', {
-        'recibidos': recibidos,
-        'otorgados': otorgados,
-        'resumen': resumen,
+        'recibidos': prestamos.filter(tipo='recibido'),
+        'otorgados': prestamos.filter(tipo='otorgado'),
+        'resumen': services.resumen_prestamos(request.user),
     })
 
 
@@ -291,17 +291,15 @@ def nuevo_prestamo(request):
                 fecha_vencimiento=request.POST.get('fecha_vencimiento') or None,
                 notas=request.POST.get('notas', ''),
             )
-            messages.success(request, 'Préstamo registrado correctamente.')
+            messages.success(request, 'Préstamo registrado.')
             return redirect('lista_prestamos')
         except ValueError as e:
             messages.error(request, str(e))
-    
     return render(request, 'gastos/form_prestamo.html')
 
 
 @login_required
 def registrar_pago_prestamo(request, pk):
-  
     if request.method == 'POST':
         try:
             services.registrar_pago_prestamo(
@@ -311,10 +309,9 @@ def registrar_pago_prestamo(request, pk):
                 fecha=request.POST.get('fecha') or None,
                 notas=request.POST.get('notas', ''),
             )
-            messages.success(request, 'Pago registrado correctamente.')
+            messages.success(request, 'Pago registrado.')
         except (ValueError, Prestamo.DoesNotExist) as e:
             messages.error(request, str(e))
-    
     return redirect('lista_prestamos')
 
 
@@ -329,28 +326,23 @@ def eliminar_prestamo(request, pk):
 
 @login_required
 def detalle_prestamo(request, pk):
- 
     prestamo = get_object_or_404(Prestamo, pk=pk, usuario=request.user)
-    pagos = prestamo.pagos.all()  # ya ordenados por fecha DESC (definido en Meta)
-    
     return render(request, 'gastos/detalle_prestamo.html', {
         'prestamo': prestamo,
-        'pagos': pagos,
+        'pagos': prestamo.pagos.all(),
     })
+
+
+# ─────────────────────────────────────────────
+# METAS DE AHORRO
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_metas(request):
-    """
-    Muestra todas las metas de ahorro.
-    Separamos activas de completadas para que sea más clara la vista.
-    """
     metas = MetaAhorro.objects.filter(usuario=request.user).prefetch_related('aportes')
-    activas = metas.filter(activa=True)
-    completadas = metas.filter(activa=False)
-    
     return render(request, 'gastos/metas.html', {
-        'activas': activas,
-        'completadas': completadas,
+        'activas': metas.filter(activa=True),
+        'completadas': metas.filter(activa=False),
     })
 
 
@@ -370,24 +362,25 @@ def nueva_meta(request):
             return redirect('lista_metas')
         except ValueError as e:
             messages.error(request, str(e))
-    
-    # Opciones de iconos para el selector
-    iconos = MetaAhorro.ICONO_CHOICES
-    return render(request, 'gastos/form_meta.html', {'iconos': iconos})
+    return render(request, 'gastos/form_meta.html', {
+        'iconos': MetaAhorro.ICONO_CHOICES,
+    })
 
 
 @login_required
 def registrar_aporte(request, pk):
+    # NOMBRE CORRECTO: la vista se llama registrar_aporte
+    # pero llama al servicio registrar_aporte_meta (con sufijo)
     if request.method == 'POST':
         try:
-            services.registrar_aporte(
+            services.registrar_aporte_meta(
                 usuario=request.user,
                 meta_id=pk,
                 monto=request.POST.get('monto', 0),
                 fecha=request.POST.get('fecha') or None,
                 notas=request.POST.get('notas', ''),
             )
-            messages.success(request, '¡Aporte registrado! Seguís avanzando 💪')
+            messages.success(request, '¡Aporte registrado! 💪')
         except (ValueError, MetaAhorro.DoesNotExist) as e:
             messages.error(request, str(e))
     return redirect('lista_metas')
@@ -404,10 +397,27 @@ def eliminar_meta(request, pk):
 
 @login_required
 def archivar_meta(request, pk):
-    """Marcar como completada/archivada sin eliminar el historial."""
     meta = get_object_or_404(MetaAhorro, pk=pk, usuario=request.user)
     if request.method == 'POST':
         meta.activa = False
         meta.save(update_fields=['activa'])
-        messages.success(request, '¡Meta archivada! 🎉')
+        messages.success(request, '¡Meta archivada!')
     return redirect('lista_metas')
+
+
+# ─────────────────────────────────────────────
+# REGISTRO DE USUARIO
+# ─────────────────────────────────────────────
+
+def registro(request):
+    # BUG CORREGIDO: antes faltaba el return render() para GET y POST inválido
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            login(request, usuario)
+            messages.success(request, f'¡Bienvenida, {usuario.username}!')
+            return redirect('inicio')
+    else:
+        form = UserCreationForm()
+    return render(request, 'gastos/registro.html', {'form': form})

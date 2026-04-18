@@ -1,14 +1,3 @@
- #CAMBIOS vs la versión anterior:
-# 1. La vista estadisticas() ahora prepara datos JSON para Chart.js
-# 2. Se agregan datos de evolución (últimos 6 meses)
-# 3. Se agrega lista de meses para el selector del filtro
-#
-# ¿Por qué preparar los datos en Python y no en JS?
-# Porque Python tiene acceso directo a la BD, y podemos
-# formatear exactamente lo que Chart.js necesita.
-# El JS solo recibe el JSON listo para usar.
-# ============================================================
-
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse

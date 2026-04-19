@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Gastos Familiares{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <style>
         :root {
             --bg-body: #f8f9fa;
@@ -17,7 +16,6 @@
             --table-bg: #ffffff;
             --table-hover: #f5f5f5;
         }
-
         [data-theme="dark"] {
             --bg-body: #1a1a2e;
             --bg-card: #16213e;
@@ -28,22 +26,18 @@
             --table-bg: #16213e;
             --table-hover: #1e1e3a;
         }
-
         body {
             background-color: var(--bg-body);
             color: var(--text-body);
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-
         .card {
             background-color: var(--bg-card);
             border-color: var(--border-color);
         }
-
         .navbar {
             background-color: var(--bg-navbar) !important;
         }
-
         .table { color: var(--text-body); }
         .table > :not(caption) > * > * {
             background-color: var(--table-bg);
@@ -53,19 +47,16 @@
         .table-hover > tbody > tr:hover > * {
             background-color: var(--table-hover);
         }
-
         [data-theme="dark"] .form-control,
         [data-theme="dark"] .form-select {
             background-color: var(--bg-card);
             border-color: var(--border-color);
             color: var(--text-body);
         }
-
         [data-theme="dark"] .modal-content {
             background-color: var(--bg-card);
             color: var(--text-body);
         }
-
         #btnDarkMode {
             background: none;
             border: 1px solid rgba(255,255,255,0.3);
@@ -76,8 +67,57 @@
             font-size: 14px;
             transition: background 0.2s;
         }
-        #btnDarkMode:hover { background: rgba(255,255,255,0.15); }
-
+        [data-theme="dark"] label,
+[data-theme="dark"] .form-label {
+    color: #e0e0e0 !important;
+}
+[data-theme="dark"] .form-select option {
+    background-color: #16213e;
+    color: #e0e0e0;
+}
+        [data-theme="dark"] .table-dark th {
+            background-color: #0a0a1a !important;
+            color: #e0e0e0 !important;
+        }
+        [data-theme="dark"] .text-muted {
+            color: #b0b0b0 !important;
+        }
+        [data-theme="dark"] .card-title,
+        [data-theme="dark"] .card-body h6,
+        [data-theme="dark"] .card-body small {
+            color: #e0e0e0 !important;
+        }
+        [data-theme="dark"] .badge.bg-warning {
+            color: #1a1a1a !important;
+        }
+        [data-theme="dark"] .progress {
+            background-color: #2d2d4e;
+        }
+        [data-theme="dark"] .list-group-item {
+            background-color: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-body);
+        }
+        [data-theme="dark"] .modal-header,
+        [data-theme="dark"] .modal-footer {
+            border-color: var(--border-color);
+        }
+        [data-theme="dark"] .input-group-text {
+            background-color: #0f0f1a;
+            border-color: var(--border-color);
+            color: var(--text-body);
+        }
+        [data-theme="dark"] .btn-outline-dark {
+            color: #e0e0e0;
+            border-color: #6c757d;
+        }
+        [data-theme="dark"] .btn-outline-dark:hover {
+            background-color: #2d2d4e;
+            color: #e0e0e0;
+        }
+        [data-theme="dark"] .btn-close {
+            filter: invert(1);
+        }
         .table-responsive { overflow-x: auto; }
         @media (max-width: 768px) {
             .navbar { flex-wrap: wrap; gap: 8px; }
@@ -88,69 +128,53 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark px-3 py-2">
-        <a class="navbar-brand fw-bold" href="{% url 'inicio' %}">💰 Gastos</a>
-        
-        <div class="d-flex gap-2 flex-wrap align-items-center">
-            <a class="text-white text-decoration-none" href="{% url 'lista_gastos' %}">Gastos</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_compras' %}">Compras</a>
-            <a class="text-white text-decoration-none" href="{% url 'alertas' %}">Alertas</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_recurrentes' %}">Recurrentes</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_ingresos' %}">Ingresos</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_prestamos' %}">Préstamos</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_metas' %}">Ahorro</a>
-            <a class="text-white text-decoration-none" href="{% url 'estadisticas' %}">Estadísticas</a>
-            
-            <button id="btnDarkMode" title="Cambiar tema">🌙</button>
-            
-            <form method="post" action="{% url 'logout' %}" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-link text-white p-0 text-decoration-none" 
-                        style="font-size:12px">Salir</button>
-            </form>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        {% block contenido %}{% endblock %}
+<nav class="navbar navbar-dark px-3 py-2">
+    <a class="navbar-brand fw-bold" href="{% url 'inicio' %}">💰 Gastos</a>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <a class="text-white text-decoration-none" href="{% url 'lista_gastos' %}">Gastos</a>
+        <a class="text-white text-decoration-none" href="{% url 'lista_compras' %}">Compras</a>
+        <a class="text-white text-decoration-none" href="{% url 'alertas' %}">Alertas</a>
+        <a class="text-white text-decoration-none" href="{% url 'lista_recurrentes' %}">Recurrentes</a>
+        <a class="text-white text-decoration-none" href="{% url 'lista_ingresos' %}">Ingresos</a>
+        <a class="text-white text-decoration-none" href="{% url 'lista_prestamos' %}">Préstamos</a>
+        <a class="text-white text-decoration-none" href="{% url 'lista_metas' %}">Ahorro</a>
+        <a class="text-white text-decoration-none" href="{% url 'estadisticas' %}">Estadísticas</a>
+        <button id="btnDarkMode" title="Cambiar tema">🌙</button>
+        <form method="post" action="{% url 'logout' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link text-white p-0 text-decoration-none" style="font-size:12px">Salir</button>
+        </form>
     </div>
+</nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        const btn = document.getElementById('btnDarkMode');
-        const html = document.documentElement;
-        
-        const temaGuardado = localStorage.getItem('tema') || 'light';
-        aplicarTema(temaGuardado);
-        
-        btn.addEventListener('click', function() {
-            const temaActual = html.getAttribute('data-theme');
-            const nuevoTema = temaActual === 'dark' ? 'light' : 'dark';
-            aplicarTema(nuevoTema);
-            localStorage.setItem('tema', nuevoTema);
-        });
-        
-        function aplicarTema(tema) {
-            html.setAttribute('data-theme', tema);
-            btn.textContent = tema === 'dark' ? '☀️' : '🌙';
-        }
-    </script>
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% block contenido %}{% endblock %}
+</div>
 
-    {# 
-      BLOQUE SCRIPTS — Clave para los gráficos
-      Cada template hijo puede agregar sus propios scripts acá.
-      Si no se define en el hijo, este bloque queda vacío (no pasa nada).
-    #}
-    {% block scripts %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const btn = document.getElementById('btnDarkMode');
+    const html = document.documentElement;
+    const temaGuardado = localStorage.getItem('tema') || 'light';
+    aplicarTema(temaGuardado);
+    btn.addEventListener('click', function() {
+        const nuevo = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        aplicarTema(nuevo);
+        localStorage.setItem('tema', nuevo);
+    });
+    function aplicarTema(t) {
+        html.setAttribute('data-theme', t);
+        btn.textContent = t === 'dark' ? '☀️' : '🌙';
+    }
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

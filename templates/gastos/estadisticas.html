@@ -1,34 +1,291 @@
-{% extends 'gastos/base.html' %} {% block titulo %}Estadísticas{% endblock %} {% block contenido %}
-📊 Estadísticas — {{ mes }}/{{ año }}
-⬇️ Exportar Excel
+{% extends 'gastos/base.html' %}
+{% block titulo %}Estadísticas{% endblock %}
 
-{{ nombre }}
-Filtrar
-Ingresos
-${{ total_ingresos|floatformat:0 }}
-Total egresos
-${{ total_egresos|floatformat:0 }}
-Pendiente
-${{ total_pendiente|floatformat:0 }}
-Balance
-${{ balance|floatformat:0 }}
+{% block contenido %}
+<div class="d-flex justify-content-between mb-3 align-items-center">
+    <h4>📊 Estadísticas</h4>
+    <a href="{% url 'exportar_excel' %}" class="btn btn-success btn-sm">⬇️ Excel</a>
+</div>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold">Vista</label>
+                <select name="periodo" class="form-select form-select-sm">
+                    <option value="mensual"   {% if periodo == 'mensual'   %}selected{% endif %}>Mensual</option>
+                    <option value="semanal"   {% if periodo == 'semanal'   %}selected{% endif %}>Semanal</option>
+                    <option value="diario"    {% if periodo == 'diario'    %}selected{% endif %}>Diario</option>
+                    <option value="semestral" {% if periodo == 'semestral' %}selected{% endif %}>Semestral</option>
+                    <option value="anual"     {% if periodo == 'anual'     %}selected{% endif %}>Anual</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold">Mes</label>
+                <select name="mes" class="form-select form-select-sm">
+                    {% for num, nombre in meses_lista %}
+                    <option value="{{ num }}" {% if mes == num %}selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold">Año</label>
+                <input type="number" name="año" class="form-control form-control-sm" value="{{ año }}">
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-bold">Categoría</label>
+                <select name="categoria_filtro" class="form-select form-select-sm">
+                    <option value="">— Todas —</option>
+                    {% for c in categorias %}
+                    <option value="{{ c.pk }}" {% if categoria_filtro == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <button class="btn btn-dark btn-sm w-100">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<p class="text-muted small mb-2">
+    Mostrando: <strong>{{ titulo_periodo }}</strong>
+    {% if categoria_nombre %} — Categoría: <strong>{{ categoria_nombre }}</strong>{% endif %}
+</p>
+
+<div class="row mb-4 g-2">
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body py-3">
+                <h6 class="card-title small">Ingresos</h6>
+                <h4 class="mb-0">${{ total_ingresos|floatformat:0 }}</h4>
+                {% if promedio_diario_ingresos %}<small class="opacity-75">${{ promedio_diario_ingresos|floatformat:0 }}/día</small>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-dark h-100">
+            <div class="card-body py-3">
+                <h6 class="card-title small">Egresos</h6>
+                <h4 class="mb-0">${{ total_egresos|floatformat:0 }}</h4>
+                {% if promedio_diario_egresos %}<small class="opacity-75">${{ promedio_diario_egresos|floatformat:0 }}/día</small>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body py-3">
+                <h6 class="card-title small">Pendiente</h6>
+                <h4 class="mb-0">${{ total_pendiente|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white {% if balance >= 0 %}bg-info{% else %}bg-danger{% endif %} h-100">
+            <div class="card-body py-3">
+                <h6 class="card-title small">Balance</h6>
+                <h4 class="mb-0">${{ balance|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if por_categoria or ingresos_por_tipo %}
+<div class="row mb-4 g-3">
+    {% if por_categoria %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title text-center">Egresos por categoría</h6>
+                <div style="position:relative; height:260px;">
+                    <canvas id="graficoCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if ingresos_por_tipo %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title text-center">Ingresos por tipo</h6>
+                <div style="position:relative; height:260px;">
+                    <canvas id="graficoIngresos"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if evolucion_labels %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="card-title">{{ titulo_evolucion }}</h6>
+        <div style="position:relative; height:200px;">
+            <canvas id="graficoEvolucion"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if resumen_categorias %}
+<h5 class="mt-4">Resumen por categoría</h5>
+<div class="table-responsive mb-4">
+<table class="table table-hover table-sm">
+    <thead class="table-dark">
+        <tr>
+            <th>Categoría</th>
+            <th class="text-end">Total período</th>
+            <th class="text-end">Promedio/día</th>
+            <th class="text-end">Proyección mensual</th>
+            <th class="text-end">Proyección anual</th>
+            <th>% del total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in resumen_categorias %}
+        <tr>
+            <td>{{ r.nombre }}</td>
+            <td class="text-end">${{ r.total|floatformat:0 }}</td>
+            <td class="text-end text-muted">${{ r.por_dia|floatformat:0 }}</td>
+            <td class="text-end">${{ r.proyeccion_mensual|floatformat:0 }}</td>
+            <td class="text-end">${{ r.proyeccion_anual|floatformat:0 }}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height:6px">
+                        <div class="progress-bar bg-danger" style="width:{{ r.porcentaje }}%"></div>
+                    </div>
+                    <small>{{ r.porcentaje }}%</small>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+<h5>Detalle de gastos</h5>
+<div class="table-responsive">
+<table class="table table-hover table-sm">
+    <thead>
+        <tr><th>Descripción</th><th>Monto</th><th>Categoría</th><th>Fecha</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+        {% for g in gastos %}
+        <tr class="{% if g.estado == 'vencido' %}table-danger{% elif g.estado == 'pagado' %}table-success{% endif %}">
+            <td>{{ g.descripcion }}</td>
+            <td>${{ g.monto|floatformat:0 }}</td>
+            <td>{{ g.categoria }}</td>
+            <td>{{ g.fecha }}</td>
+            <td>{{ g.get_estado_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">Sin gastos en este período</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<h5 class="mt-4">Ingresos del período</h5>
+<div class="table-responsive">
+<table class="table table-hover table-sm">
+    <thead>
+        <tr><th>Descripción</th><th>Monto</th><th>Tipo</th><th>Fecha</th></tr>
+    </thead>
+    <tbody>
+        {% for i in ingresos %}
+        <tr class="table-success">
+            <td>{{ i.descripcion }}</td>
+            <td>${{ i.monto|floatformat:0 }}</td>
+            <td>{{ i.get_tipo_display }}</td>
+            <td>{{ i.fecha }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">Sin ingresos en este período</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Detectar tema DESPUÉS de que el JS de base.html lo aplica
+const DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+const TEXT_COLOR = DARK ? '#e0e0e0' : '#212529';
+const GRID_COLOR = DARK ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+const COLORES = [
+    'rgba(99,102,241,0.85)','rgba(16,185,129,0.85)','rgba(245,158,11,0.85)',
+    'rgba(239,68,68,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)',
+    'rgba(236,72,153,0.85)','rgba(20,184,166,0.85)',
+];
+
 {% if por_categoria %}
-Egresos por categoría
-{% endif %} {% if ingresos_por_tipo %}
-Ingresos por tipo
+const dataCat = {{ datos_categorias_json|safe }};
+new Chart(document.getElementById('graficoCategorias'), {
+    type: 'pie',
+    data: {
+        labels: dataCat.labels,
+        datasets: [{ data: dataCat.values, backgroundColor: COLORES, borderWidth: 2, borderColor: DARK ? '#16213e' : '#fff' }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: TEXT_COLOR, padding: 10, font: {size:11} } },
+            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-CL')}` } }
+        }
+    }
+});
 {% endif %}
-{% endif %} {% if evolucion_labels %}
-Evolución últimos 6 meses
+
+{% if ingresos_por_tipo %}
+const dataIng = {{ datos_ingresos_json|safe }};
+new Chart(document.getElementById('graficoIngresos'), {
+    type: 'pie',
+    data: {
+        labels: dataIng.labels,
+        datasets: [{ data: dataIng.values,
+            backgroundColor: ['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)','rgba(245,158,11,0.85)'],
+            borderWidth: 2, borderColor: DARK ? '#16213e' : '#fff' }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: TEXT_COLOR, padding: 10, font: {size:11} } },
+            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-CL')}` } }
+        }
+    }
+});
 {% endif %}
-Egresos del mes
-{% for g in gastos %} {% empty %} {% endfor %}
-Descripción	Monto	Categoría	Vencimiento	Estado
-{{ g.descripcion }}	${{ g.monto|floatformat:0 }}	{{ g.categoria }}	{{ g.fecha_vencimiento|default:"-" }}	{{ g.get_estado_display }}
-Sin egresos este mes
-Ingresos del mes
-{% for i in ingresos %} {% empty %} {% endfor %}
-Descripción	Monto	Tipo	Fecha
-{{ i.descripcion }}	${{ i.monto|floatformat:0 }}	{{ i.get_tipo_display }}	{{ i.fecha }}
-Sin ingresos este mes
-{% endblock %} {% block scripts %} {% endblock %}
+
+{% if evolucion_labels %}
+new Chart(document.getElementById('graficoEvolucion'), {
+    type: 'bar',
+    data: {
+        labels: {{ evolucion_labels|safe }},
+        datasets: [
+            { label: 'Ingresos', data: {{ evolucion_ingresos|safe }}, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
+            { label: 'Egresos',  data: {{ evolucion_egresos|safe }},  backgroundColor: 'rgba(239,68,68,0.7)',  borderRadius: 4 }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: TEXT_COLOR } },
+            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CL')}` } }
+        },
+        scales: {
+            y: { beginAtZero: true,
+                 ticks: { callback: v => `$${(v/1000).toFixed(0)}k`, color: TEXT_COLOR },
+                 grid: { color: GRID_COLOR } },
+            x: { ticks: { color: TEXT_COLOR }, grid: { display: false } }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

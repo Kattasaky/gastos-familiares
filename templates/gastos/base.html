@@ -44,9 +44,7 @@
             background-color: var(--bg-navbar) !important;
         }
 
-        .table {
-            color: var(--text-body);
-        }
+        .table { color: var(--text-body); }
         .table > :not(caption) > * > * {
             background-color: var(--table-bg);
             color: var(--text-body);
@@ -78,9 +76,7 @@
             font-size: 14px;
             transition: background 0.2s;
         }
-        #btnDarkMode:hover {
-            background: rgba(255,255,255,0.15);
-        }
+        #btnDarkMode:hover { background: rgba(255,255,255,0.15); }
 
         .table-responsive { overflow-x: auto; }
         @media (max-width: 768px) {
@@ -99,4 +95,62 @@
             <a class="text-white text-decoration-none" href="{% url 'lista_gastos' %}">Gastos</a>
             <a class="text-white text-decoration-none" href="{% url 'lista_compras' %}">Compras</a>
             <a class="text-white text-decoration-none" href="{% url 'alertas' %}">Alertas</a>
-            <a class="text-white text-decoration-none" href="{% url 'lista_recurrentes' %}">
+            <a class="text-white text-decoration-none" href="{% url 'lista_recurrentes' %}">Recurrentes</a>
+            <a class="text-white text-decoration-none" href="{% url 'lista_ingresos' %}">Ingresos</a>
+            <a class="text-white text-decoration-none" href="{% url 'lista_prestamos' %}">Préstamos</a>
+            <a class="text-white text-decoration-none" href="{% url 'lista_metas' %}">Ahorro</a>
+            <a class="text-white text-decoration-none" href="{% url 'estadisticas' %}">Estadísticas</a>
+            
+            <button id="btnDarkMode" title="Cambiar tema">🌙</button>
+            
+            <form method="post" action="{% url 'logout' %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link text-white p-0 text-decoration-none" 
+                        style="font-size:12px">Salir</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block contenido %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const btn = document.getElementById('btnDarkMode');
+        const html = document.documentElement;
+        
+        const temaGuardado = localStorage.getItem('tema') || 'light';
+        aplicarTema(temaGuardado);
+        
+        btn.addEventListener('click', function() {
+            const temaActual = html.getAttribute('data-theme');
+            const nuevoTema = temaActual === 'dark' ? 'light' : 'dark';
+            aplicarTema(nuevoTema);
+            localStorage.setItem('tema', nuevoTema);
+        });
+        
+        function aplicarTema(tema) {
+            html.setAttribute('data-theme', tema);
+            btn.textContent = tema === 'dark' ? '☀️' : '🌙';
+        }
+    </script>
+
+    {# 
+      BLOQUE SCRIPTS — Clave para los gráficos
+      Cada template hijo puede agregar sus propios scripts acá.
+      Si no se define en el hijo, este bloque queda vacío (no pasa nada).
+    #}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

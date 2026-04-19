@@ -1,74 +1,20 @@
-{% extends 'gastos/base.html' %}
-{% block titulo %}Nuevo Préstamo{% endblock %}
-
-{% block contenido %}
-<h4 class="mb-4">💸 Nuevo Préstamo</h4>
-
-<div class="col-md-6">
-    <form method="post">
-        {% csrf_token %}
-        
-        <div class="mb-3">
-            <label class="form-label">¿Qué tipo de préstamo es?</label>
-            <select name="tipo" class="form-select" id="tipoPrestamo">
-                <option value="recibido">Me prestaron a mí (yo debo)</option>
-                <option value="otorgado">Yo presté dinero (me deben)</option>
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label" id="labelPersona">Nombre de quien me prestó</label>
-            <input type="text" name="persona" class="form-control" 
-                   placeholder="Ej: Mamá, Tío Carlos" required>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Concepto / Motivo</label>
-            <input type="text" name="concepto" class="form-control" 
-                   placeholder="Ej: Gastos médicos, Arriendo enero" required>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Monto total del préstamo</label>
-            <div class="input-group">
-                <span class="input-group-text">$</span>
-                <input type="number" name="monto_total" class="form-control" min="1" required>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Fecha del préstamo</label>
-            <input type="date" name="fecha_prestamo" class="form-control">
-            <small class="text-muted">Si dejás vacío, se usa la fecha de hoy.</small>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Fecha límite para pagar (opcional)</label>
-            <input type="date" name="fecha_vencimiento" class="form-control">
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Notas adicionales</label>
-            <textarea name="notas" class="form-control" rows="2" 
-                      placeholder="Ej: Se acordó pagar en cuotas de $50.000 cada mes"></textarea>
-        </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-dark">Guardar préstamo</button>
-            <a href="{% url 'lista_prestamos' %}" class="btn btn-outline-dark">Cancelar</a>
-        </div>
-    </form>
-</div>
-
-<script>
-// Cambia el label dinámicamente según el tipo seleccionado
-document.getElementById('tipoPrestamo').addEventListener('change', function() {
-    const label = document.getElementById('labelPersona');
-    if (this.value === 'recibido') {
-        label.textContent = 'Nombre de quien me prestó';
-    } else {
-        label.textContent = 'Nombre de a quien le presté';
-    }
-});
-</script>
+{% extends 'gastos/base.html' %} {% block titulo %}Nuevo Préstamo{% endblock %} {% block contenido %}
+💸 Nuevo Préstamo
+{% csrf_token %}
+¿Qué tipo de préstamo es? 
+Me prestaron a mí (yo debo)
+Nombre de quien me prestó 
+Ej: Mamá, Tío Carlos
+Concepto / Motivo 
+Ej: Gastos médicos, Arriendo enero
+Monto total del préstamo
+$ 
+Fecha del préstamo 
+dd-mm-aaaa
+ Si dejás vacío, se usa la fecha de hoy.
+Fecha límite para pagar (opcional) 
+dd-mm-aaaa
+Notas adicionales 
+Ej: Se acordó pagar en cuotas de $50.000 cada mes
+Guardar préstamo Cancelar
 {% endblock %}

@@ -1,86 +1,26 @@
-{% extends 'gastos/base.html' %}
-{% block titulo %}Detalle Préstamo{% endblock %}
+{% extends 'gastos/base.html' %} {% block titulo %}Detalle Préstamo{% endblock %} {% block contenido %}
+{{ prestamo.persona }}
+{{ prestamo.concepto }} — {{ prestamo.get_tipo_display }}
 
-{% block contenido %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4>{{ prestamo.persona }}</h4>
-        <p class="text-muted mb-0">{{ prestamo.concepto }} — {{ prestamo.get_tipo_display }}</p>
-    </div>
-    <a href="{% url 'lista_prestamos' %}" class="btn btn-outline-dark">← Volver</a>
-</div>
-
+← Volver
 {# Tarjeta resumen del préstamo #}
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <small class="text-muted d-block">Total prestado</small>
-                <strong>${{ prestamo.monto_total|floatformat:0 }}</strong>
-            </div>
-            <div class="col-md-3">
-                <small class="text-muted d-block">Total pagado</small>
-                <strong class="text-success">${{ prestamo.monto_pagado|floatformat:0 }}</strong>
-            </div>
-            <div class="col-md-3">
-                <small class="text-muted d-block">Adeudado</small>
-                <strong class="text-danger">${{ prestamo.monto_adeudado|floatformat:0 }}</strong>
-            </div>
-            <div class="col-md-3">
-                <small class="text-muted d-block">Estado</small>
-                <span class="badge 
-                    {% if prestamo.estado == 'saldado' %}bg-success
-                    {% elif prestamo.estado == 'vencido' %}bg-danger
-                    {% else %}bg-warning text-dark{% endif %}">
-                    {{ prestamo.get_estado_display }}
-                </span>
-            </div>
-        </div>
-        
-        {# Barra de progreso grande #}
-        <div class="mt-3">
-            <small class="text-muted">Progreso de pago: {{ prestamo.porcentaje_pagado }}%</small>
-            <div class="progress mt-1" style="height:12px">
-                <div class="progress-bar bg-success" 
-                     style="width:{{ prestamo.porcentaje_pagado }}%">
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+Total prestado ${{ prestamo.monto_total|floatformat:0 }}
+Total pagado ${{ prestamo.monto_pagado|floatformat:0 }}
+Adeudado ${{ prestamo.monto_adeudado|floatformat:0 }}
+Estado {{ prestamo.get_estado_display }}
+{# Barra de progreso grande #}
+Progreso de pago: {{ prestamo.porcentaje_pagado }}%
 {# Historial de pagos #}
-<h5>Historial de pagos</h5>
+Historial de pagos
 {% if pagos %}
-<div class="table-responsive">
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Fecha</th>
-            <th>Monto</th>
-            <th>Notas</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pago in pagos %}
-        <tr>
-            <td>{{ pago.fecha }}</td>
-            <td class="text-success"><strong>${{ pago.monto|floatformat:0 }}</strong></td>
-            <td>{{ pago.notas|default:"—" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
+{% for pago in pagos %} {% endfor %}
+Fecha	Monto	Notas
+{{ pago.fecha }}	${{ pago.monto|floatformat:0 }}	{{ pago.notas|default:"—" }}
 {% else %}
-<p class="text-muted">Aún no hay pagos registrados para este préstamo.</p>
-{% endif %}
+Aún no hay pagos registrados para este préstamo.
 
-{% if prestamo.notas %}
-<div class="mt-3">
-    <h6>Notas</h6>
-    <p class="text-muted">{{ prestamo.notas }}</p>
-</div>
-{% endif %}
+{% endif %} {% if prestamo.notas %}
+Notas
+{{ prestamo.notas }}
 
-{% endblock %}
+{% endif %} {% endblock %}

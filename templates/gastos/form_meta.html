@@ -1,0 +1,16 @@
+{% extends 'gastos/base.html' %} {% block titulo %}Nueva Meta de Ahorro{% endblock %} {% block contenido %}
+🎯 Nueva Meta de Ahorro
+{% csrf_token %}
+¿Para qué estás ahorrando? 
+Ej: Viaje a Mendoza, Fondo de emergencia
+Icono 
+{{ valor }} {{ etiqueta }}
+¿Cuánto querés ahorrar?
+$ 
+¿Para cuándo? (opcional) 
+dd-mm-aaaa
+ Si ponés una fecha, la app te calcula cuánto ahorrar por mes.
+Descripción (opcional) 
+Ej: Viaje de vacaciones de verano con la familia
+Crear meta Cancelar
+{% endblock %}

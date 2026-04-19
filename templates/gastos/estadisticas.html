@@ -15,3 +15,20 @@ ${{ balance|floatformat:0 }}
 {% if por_categoria or ingresos_por_tipo %}
 {% if por_categoria %}
 Egresos por categoría
+{% endif %} {% if ingresos_por_tipo %}
+Ingresos por tipo
+{% endif %}
+{% endif %} {% if evolucion_labels %}
+Evolución últimos 6 meses
+{% endif %}
+Egresos del mes
+{% for g in gastos %} {% empty %} {% endfor %}
+Descripción	Monto	Categoría	Vencimiento	Estado
+{{ g.descripcion }}	${{ g.monto|floatformat:0 }}	{{ g.categoria }}	{{ g.fecha_vencimiento|default:"-" }}	{{ g.get_estado_display }}
+Sin egresos este mes
+Ingresos del mes
+{% for i in ingresos %} {% empty %} {% endfor %}
+Descripción	Monto	Tipo	Fecha
+{{ i.descripcion }}	${{ i.monto|floatformat:0 }}	{{ i.get_tipo_display }}	{{ i.fecha }}
+Sin ingresos este mes
+{% endblock %} {% block scripts %} {% endblock %}

@@ -1,267 +1,58 @@
-{% extends 'gastos/base.html' %}
-{% block titulo %}Préstamos{% endblock %}
-
-{% block contenido %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4>💸 Préstamos Familiares</h4>
-    <a href="{% url 'nuevo_prestamo' %}" class="btn btn-dark">+ Nuevo préstamo</a>
-</div>
-
+💸 Préstamos Familiares
++ Nuevo préstamo
 {# ---- Tarjetas de resumen ---- #}
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-danger">
-            <div class="card-body">
-                <h6>Lo que yo debo</h6>
-                <h3>${{ resumen.total_que_debo|floatformat:0 }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <h6>Lo que me deben</h6>
-                <h3>${{ resumen.total_que_me_deben|floatformat:0 }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-dark">
-            <div class="card-body">
-                <h6>Préstamos vigentes</h6>
-                <h3>{{ resumen.cantidad_vigentes }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
-
+Lo que yo debo
+${{ resumen.total_que_debo|floatformat:0 }}
+Lo que me deben
+${{ resumen.total_que_me_deben|floatformat:0 }}
+Préstamos vigentes
+{{ resumen.cantidad_vigentes }}
 {# ---- Sección: Lo que yo debo ---- #}
-<h5 class="mt-4 mb-3">🔴 Me prestaron a mí</h5>
+🔴 Me prestaron a mí
 {% if recibidos %}
-<div class="table-responsive">
-<table class="table table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Persona</th>
-            <th>Concepto</th>
-            <th>Total</th>
-            <th>Pagado</th>
-            <th>Adeudado</th>
-            <th>Progreso</th>
-            <th>Vencimiento</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for p in recibidos %}
-        <tr class="{% if p.estado == 'saldado' %}table-success{% elif p.estado == 'vencido' %}table-danger{% endif %}">
-            <td><strong>{{ p.persona }}</strong></td>
-            <td>{{ p.concepto }}</td>
-            <td>${{ p.monto_total|floatformat:0 }}</td>
-            <td class="text-success">${{ p.monto_pagado|floatformat:0 }}</td>
-            <td class="text-danger">${{ p.monto_adeudado|floatformat:0 }}</td>
-            <td style="min-width:100px">
-                {# Barra de progreso visual — usa el @property porcentaje_pagado del modelo #}
-                <div class="progress" style="height:8px">
-                    <div class="progress-bar bg-success" 
-                         style="width:{{ p.porcentaje_pagado }}%"
-                         title="{{ p.porcentaje_pagado }}% pagado">
-                    </div>
-                </div>
-                <small class="text-muted">{{ p.porcentaje_pagado }}%</small>
-            </td>
-            <td>{{ p.fecha_vencimiento|default:"Sin límite" }}</td>
-            <td>
-                <span class="badge 
-                    {% if p.estado == 'saldado' %}bg-success
-                    {% elif p.estado == 'vencido' %}bg-danger
-                    {% else %}bg-warning text-dark{% endif %}">
-                    {{ p.get_estado_display }}
-                </span>
-            </td>
-            <td>
-                <div class="d-flex gap-1 flex-wrap">
-                    {% if p.estado != 'saldado' %}
-                    {# Modal de pago rápido #}
-                    <button class="btn btn-sm btn-success" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#modalPago{{ p.pk }}">
-                        Pagar
-                    </button>
-                    {% endif %}
-                    <a href="{% url 'detalle_prestamo' p.pk %}" class="btn btn-sm btn-outline-dark">
-                        Ver pagos
-                    </a>
-                    <form method="post" action="{% url 'eliminar_prestamo' p.pk %}">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-danger" 
-                                onclick="return confirm('¿Eliminar este préstamo y su historial?')">
-                            Eliminar
-                        </button>
-                    </form>
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
+{% for p in recibidos %} {% endfor %}
+Persona	Concepto	Total	Pagado	Adeudado	Progreso	Vencimiento	Estado	Acciones
+{{ p.persona }}	{{ p.concepto }}	${{ p.monto_total|floatformat:0 }}	${{ p.monto_pagado|floatformat:0 }}	${{ p.monto_adeudado|floatformat:0 }}	{# Barra de progreso visual — usa el @property porcentaje_pagado del modelo #}
+{{ p.porcentaje_pagado }}%	{{ p.fecha_vencimiento|default:"Sin límite" }}	{{ p.get_estado_display }}	
+{% if p.estado != 'saldado' %} {# Modal de pago rápido #} Pagar {% endif %} Ver pagos
+{% csrf_token %} Eliminar
 {% else %}
-<p class="text-muted">No hay préstamos recibidos registrados.</p>
-{% endif %}
+No hay préstamos recibidos registrados.
 
-{# ---- Sección: Lo que me deben ---- #}
-<h5 class="mt-5 mb-3">🟢 Yo presté dinero</h5>
+{% endif %} {# ---- Sección: Lo que me deben ---- #}
+🟢 Yo presté dinero
 {% if otorgados %}
-<div class="table-responsive">
-<table class="table table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Persona</th>
-            <th>Concepto</th>
-            <th>Total</th>
-            <th>Pagado</th>
-            <th>Adeudado</th>
-            <th>Progreso</th>
-            <th>Vencimiento</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for p in otorgados %}
-        <tr class="{% if p.estado == 'saldado' %}table-success{% elif p.estado == 'vencido' %}table-danger{% endif %}">
-            <td><strong>{{ p.persona }}</strong></td>
-            <td>{{ p.concepto }}</td>
-            <td>${{ p.monto_total|floatformat:0 }}</td>
-            <td class="text-success">${{ p.monto_pagado|floatformat:0 }}</td>
-            <td class="text-danger fw-bold">${{ p.monto_adeudado|floatformat:0 }}</td>
-            <td style="min-width:100px">
-                <div class="progress" style="height:8px">
-                    <div class="progress-bar bg-success" style="width:{{ p.porcentaje_pagado }}%"></div>
-                </div>
-                <small class="text-muted">{{ p.porcentaje_pagado }}%</small>
-            </td>
-            <td>{{ p.fecha_vencimiento|default:"Sin límite" }}</td>
-            <td>
-                <span class="badge 
-                    {% if p.estado == 'saldado' %}bg-success
-                    {% elif p.estado == 'vencido' %}bg-danger
-                    {% else %}bg-info text-dark{% endif %}">
-                    {{ p.get_estado_display }}
-                </span>
-            </td>
-            <td>
-                <div class="d-flex gap-1 flex-wrap">
-                    {% if p.estado != 'saldado' %}
-                    <button class="btn btn-sm btn-success" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#modalPago{{ p.pk }}">
-                        Registrar cobro
-                    </button>
-                    {% endif %}
-                    <a href="{% url 'detalle_prestamo' p.pk %}" class="btn btn-sm btn-outline-dark">
-                        Ver pagos
-                    </a>
-                    <form method="post" action="{% url 'eliminar_prestamo' p.pk %}">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-danger"
-                                onclick="return confirm('¿Eliminar este préstamo?')">
-                            Eliminar
-                        </button>
-                    </form>
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
+{% for p in otorgados %} {% endfor %}
+Persona	Concepto	Total	Pagado	Adeudado	Progreso	Vencimiento	Estado	Acciones
+{{ p.persona }}	{{ p.concepto }}	${{ p.monto_total|floatformat:0 }}	${{ p.monto_pagado|floatformat:0 }}	${{ p.monto_adeudado|floatformat:0 }}	
+{{ p.porcentaje_pagado }}%	{{ p.fecha_vencimiento|default:"Sin límite" }}	{{ p.get_estado_display }}	
+{% if p.estado != 'saldado' %} Registrar cobro {% endif %} Ver pagos
+{% csrf_token %} Eliminar
 {% else %}
-<p class="text-muted">No hay préstamos otorgados registrados.</p>
-{% endif %}
+No hay préstamos otorgados registrados.
 
+{% endif %} {# ============================================================ MODALES DE PAGO — uno por cada préstamo vigente Se generan ocultos y Bootstrap los muestra al hacer clic. ============================================================ #} {% for p in recibidos %} {% if p.estado != 'saldado' %}
+Registrar pago — {{ p.persona }}
 
+{% csrf_token %}
+Adeudado: ${{ p.monto_adeudado|floatformat:0 }}
 
-{% for p in recibidos %}
-{% if p.estado != 'saldado' %}
-<div class="modal fade" id="modalPago{{ p.pk }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Registrar pago — {{ p.persona }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{% url 'registrar_pago_prestamo' p.pk %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <p class="text-muted">Adeudado: <strong>${{ p.monto_adeudado|floatformat:0 }}</strong></p>
-                    <div class="mb-3">
-                        <label class="form-label">Monto a pagar</label>
-                        <input type="number" name="monto" class="form-control" 
-                               max="{{ p.monto_adeudado }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fecha del pago</label>
-                        <input type="date" name="fecha" class="form-control" 
-                               value="{% now 'Y-m-d' %}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notas (opcional)</label>
-                        <input type="text" name="notas" class="form-control" 
-                               placeholder="Ej: transferencia, efectivo">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Guardar pago</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
-{% endfor %}
+Monto a pagar 
+Fecha del pago 
+dd-mm-aaaa
+Notas (opcional) 
+Ej: transferencia, efectivo
+Cancelar Guardar pago
+{% endif %} {% endfor %} {% for p in otorgados %} {% if p.estado != 'saldado' %}
+Registrar cobro — {{ p.persona }}
 
-{% for p in otorgados %}
-{% if p.estado != 'saldado' %}
-<div class="modal fade" id="modalPago{{ p.pk }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Registrar cobro — {{ p.persona }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{% url 'registrar_pago_prestamo' p.pk %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <p class="text-muted">Me deben: <strong>${{ p.monto_adeudado|floatformat:0 }}</strong></p>
-                    <div class="mb-3">
-                        <label class="form-label">Monto cobrado</label>
-                        <input type="number" name="monto" class="form-control" 
-                               max="{{ p.monto_adeudado }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fecha</label>
-                        <input type="date" name="fecha" class="form-control"
-                               value="{% now 'Y-m-d' %}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notas (opcional)</label>
-                        <input type="text" name="notas" class="form-control" 
-                               placeholder="Ej: transferencia, efectivo">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Guardar cobro</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
-{% endfor %}
+{% csrf_token %}
+Me deben: ${{ p.monto_adeudado|floatformat:0 }}
 
-{% endblock %}
+Monto cobrado 
+Fecha 
+dd-mm-aaaa
+Notas (opcional) 
+Ej: transferencia, efectivo
+Cancelar Guardar cobro
+{% endif %} {% endfor %} {% endblock %}

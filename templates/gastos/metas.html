@@ -1,7 +1,48 @@
-{% extends 'gastos/base.html' %}
+{% extends 'gastos/base.html' %} {% load gastos_extras %} {% block titulo %}Metas de Ahorro{% endblock %} {% block contenido %}
+🎯 Plan de Ahorro
++ Nueva meta
+{% if not activas and not completadas %}
+🎯
+Aún no tenés metas de ahorro
+Creá tu primera meta y empezá a ahorrar para lo que importa.
 
-{% block titulo %}Metas de Ahorro{% endblock %}
+Crear primera meta
+{% endif %} {% if activas %}
+{% for meta in activas %}
+{{ meta.icono }} {{ meta.nombre }}
+{% if meta.completada %} ¡Lista! 🎉 {% endif %}
+Ahorrado ${{ meta.monto_actual|floatformat:0 }}
+Objetivo ${{ meta.monto_objetivo|floatformat:0 }}
+Falta ${{ meta.monto_restante|floatformat:0 }}
+Progreso {{ meta.porcentaje }}%
+{% if meta.fecha_objetivo %} 📅 {{ meta.fecha_objetivo }} {% if meta.dias_restantes is not None %} {% if meta.dias_restantes > 0 %} — {{ meta.dias_restantes }} días {% elif meta.dias_restantes == 0 %} — ¡Hoy! {% else %} — Vencida hace {{ meta.dias_restantes|abs_value }} días {% endif %} {% endif %} {% if meta.ahorro_mensual_necesario %}
+💡 Ahorrar ${{ meta.ahorro_mensual_necesario|floatformat:0 }}/mes para llegar a tiempo {% endif %} {% endif %} {% if meta.descripcion %}
+{{ meta.descripcion }}
 
-{% block contenido %}
-{% load gastos_extras %}
-{% endblock %}
+{% endif %}
+{% if not meta.completada %} + Aporte {% endif %}
+{% csrf_token %} Archivar
+{% csrf_token %} Eliminar
+{% endfor %}
+{% endif %} {% if completadas %}
+📁 Archivadas
+{% for meta in completadas %}
+{{ meta.icono }} {{ meta.nombre }}
+Archivada
+${{ meta.monto_actual|floatformat:0 }} / ${{ meta.monto_objetivo|floatformat:0 }}
+{% csrf_token %} Eliminar
+{% endfor %}
+{% endif %} {# Modales de aporte #} {% for meta in activas %} {% if not meta.completada %}
+{{ meta.icono }} Aporte — {{ meta.nombre }}
+
+{% csrf_token %}
+Ahorrado: ${{ meta.monto_actual|floatformat:0 }} de ${{ meta.monto_objetivo|floatformat:0 }} ({{ meta.porcentaje }}%)
+
+Monto del aporte
+$ 
+Fecha 
+dd-mm-aaaa
+Notas (opcional) 
+Ej: Ahorro de este mes
+Cancelar Guardar
+{% endif %} {% endfor %} {% endblock %}

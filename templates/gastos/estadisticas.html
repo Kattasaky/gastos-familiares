@@ -33,7 +33,7 @@
                 <input type="number" name="año" class="form-control form-control-sm" value="{{ año }}">
             </div>
             <div class="col-6 col-md-3">
-                <label class="form-label small fw-bold">Categoría</label>
+                <label class="form-label small fw-bold">Filtrar por categoría</label>
                 <select name="categoria_filtro" class="form-select form-select-sm">
                     <option value="">— Todas —</option>
                     {% for c in categorias %}
@@ -50,66 +50,87 @@
 
 <p class="text-muted small mb-2">
     Mostrando: <strong>{{ titulo_periodo }}</strong>
-    {% if categoria_nombre %} — Categoría: <strong>{{ categoria_nombre }}</strong>{% endif %}
+    {% if categoria_nombre %} — Solo categoría: <strong>{{ categoria_nombre }}</strong>{% endif %}
 </p>
 
+{% if categoria_filtro %}
+<div class="alert alert-info py-2 small">
+    ℹ️ El gráfico de torta muestra <strong>todas las categorías</strong> del período para que puedas comparar, aunque la tabla solo muestre <strong>{{ categoria_nombre }}</strong>.
+    <a href="?periodo={{ periodo }}&mes={{ mes }}&año={{ año }}" class="alert-link ms-2">Ver todas</a>
+</div>
+{% endif %}
+
+<!-- TARJETAS: 5 métricas clave -->
 <div class="row mb-4 g-2">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md">
         <div class="card text-white bg-success h-100">
-            <div class="card-body py-3">
-                <h6 class="card-title small">Ingresos</h6>
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">✅ Pagado</h6>
+                <h4 class="mb-0">${{ total_pagado|floatformat:0 }}</h4>
+                {% if promedio_diario_egresos %}<small class="opacity-75">${{ promedio_diario_egresos|floatformat:0 }}/día</small>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">⏳ Pendiente</h6>
+                <h4 class="mb-0">${{ total_pendiente|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">❌ Vencido</h6>
+                <h4 class="mb-0">${{ total_vencido|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">💰 Ingresos</h6>
                 <h4 class="mb-0">${{ total_ingresos|floatformat:0 }}</h4>
                 {% if promedio_diario_ingresos %}<small class="opacity-75">${{ promedio_diario_ingresos|floatformat:0 }}/día</small>{% endif %}
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card text-white bg-dark h-100">
-            <div class="card-body py-3">
-                <h6 class="card-title small">Egresos</h6>
-                <h4 class="mb-0">${{ total_egresos|floatformat:0 }}</h4>
-                {% if promedio_diario_egresos %}<small class="opacity-75">${{ promedio_diario_egresos|floatformat:0 }}/día</small>{% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card text-white bg-warning h-100">
-            <div class="card-body py-3">
-                <h6 class="card-title small">Pendiente</h6>
-                <h4 class="mb-0">${{ total_pendiente|floatformat:0 }}</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card text-white {% if balance >= 0 %}bg-info{% else %}bg-danger{% endif %} h-100">
-            <div class="card-body py-3">
-                <h6 class="card-title small">Balance</h6>
+    <div class="col-12 col-md">
+        <div class="card text-white {% if balance >= 0 %}bg-info{% else %}bg-dark border border-danger{% endif %} h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">⚖️ Balance real</h6>
                 <h4 class="mb-0">${{ balance|floatformat:0 }}</h4>
+                <small class="opacity-75">Ingresos − Pagado</small>
             </div>
         </div>
     </div>
 </div>
 
-{% if por_categoria or ingresos_por_tipo %}
+<!-- GRÁFICOS -->
+{% if hay_grafico_cat or hay_grafico_ing %}
 <div class="row mb-4 g-3">
-    {% if por_categoria %}
+    {% if hay_grafico_cat %}
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
-                <h6 class="card-title text-center">Egresos por categoría</h6>
-                <div style="position:relative; height:260px;">
+                <h6 class="card-title text-center">
+                    Gastos pagados por categoría
+                    {% if categoria_filtro %}<small class="text-muted">(todas las categorías)</small>{% endif %}
+                </h6>
+                <div style="position:relative; height:280px;">
                     <canvas id="graficoCategorias"></canvas>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
-    {% if ingresos_por_tipo %}
+    {% if hay_grafico_ing %}
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
                 <h6 class="card-title text-center">Ingresos por tipo</h6>
-                <div style="position:relative; height:260px;">
+                <div style="position:relative; height:280px;">
                     <canvas id="graficoIngresos"></canvas>
                 </div>
             </div>
@@ -122,7 +143,7 @@
 {% if evolucion_labels %}
 <div class="card mb-4">
     <div class="card-body">
-        <h6 class="card-title">{{ titulo_evolucion }}</h6>
+        <h6 class="card-title">{{ titulo_evolucion }} <small class="text-muted">(barras verdes = ingresos reales · rojas = gastos pagados)</small></h6>
         <div style="position:relative; height:200px;">
             <canvas id="graficoEvolucion"></canvas>
         </div>
@@ -130,14 +151,18 @@
 </div>
 {% endif %}
 
+<!-- RESUMEN POR CATEGORÍA (solo pagado) -->
 {% if resumen_categorias %}
-<h5 class="mt-4">Resumen por categoría</h5>
+<h5 class="mt-4">
+    Resumen por categoría
+    <small class="text-muted fs-6">— solo gastos pagados</small>
+</h5>
 <div class="table-responsive mb-4">
 <table class="table table-hover table-sm">
     <thead class="table-dark">
         <tr>
             <th>Categoría</th>
-            <th class="text-end">Total período</th>
+            <th class="text-end">Total pagado</th>
             <th class="text-end">Promedio/día</th>
             <th class="text-end">Proyección mensual</th>
             <th class="text-end">Proyección anual</th>
@@ -148,14 +173,14 @@
         {% for r in resumen_categorias %}
         <tr>
             <td>{{ r.nombre }}</td>
-            <td class="text-end">${{ r.total|floatformat:0 }}</td>
+            <td class="text-end fw-bold">${{ r.total|floatformat:0 }}</td>
             <td class="text-end text-muted">${{ r.por_dia|floatformat:0 }}</td>
             <td class="text-end">${{ r.proyeccion_mensual|floatformat:0 }}</td>
             <td class="text-end">${{ r.proyeccion_anual|floatformat:0 }}</td>
             <td>
                 <div class="d-flex align-items-center gap-2">
                     <div class="progress flex-grow-1" style="height:6px">
-                        <div class="progress-bar bg-danger" style="width:{{ r.porcentaje }}%"></div>
+                        <div class="progress-bar bg-success" style="width:{{ r.porcentaje }}%"></div>
                     </div>
                     <small>{{ r.porcentaje }}%</small>
                 </div>
@@ -167,7 +192,11 @@
 </div>
 {% endif %}
 
-<h5>Detalle de gastos</h5>
+<!-- TABLA GASTOS con estado visible -->
+<h5>
+    Detalle de gastos
+    {% if categoria_nombre %}<small class="text-muted">— {{ categoria_nombre }}</small>{% endif %}
+</h5>
 <div class="table-responsive">
 <table class="table table-hover table-sm">
     <thead>
@@ -175,12 +204,16 @@
     </thead>
     <tbody>
         {% for g in gastos %}
-        <tr class="{% if g.estado == 'vencido' %}table-danger{% elif g.estado == 'pagado' %}table-success{% endif %}">
+        <tr class="{% if g.estado == 'vencido' %}table-danger{% elif g.estado == 'pagado' %}table-success{% elif g.estado == 'pendiente' %}table-warning{% endif %}">
             <td>{{ g.descripcion }}</td>
             <td>${{ g.monto|floatformat:0 }}</td>
             <td>{{ g.categoria }}</td>
             <td>{{ g.fecha }}</td>
-            <td>{{ g.get_estado_display }}</td>
+            <td>
+                <span class="badge {% if g.estado == 'pagado' %}bg-success{% elif g.estado == 'vencido' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                    {{ g.get_estado_display }}
+                </span>
+            </td>
         </tr>
         {% empty %}
         <tr><td colspan="5" class="text-center text-muted">Sin gastos en este período</td></tr>
@@ -214,49 +247,78 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// Detectar tema DESPUÉS de que el JS de base.html lo aplica
 const DARK = document.documentElement.getAttribute('data-theme') === 'dark';
 const TEXT_COLOR = DARK ? '#e0e0e0' : '#212529';
 const GRID_COLOR = DARK ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
 const COLORES = [
     'rgba(99,102,241,0.85)','rgba(16,185,129,0.85)','rgba(245,158,11,0.85)',
     'rgba(239,68,68,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)',
-    'rgba(236,72,153,0.85)','rgba(20,184,166,0.85)',
+    'rgba(236,72,153,0.85)','rgba(20,184,166,0.85)','rgba(234,179,8,0.85)',
+    'rgba(34,197,94,0.85)','rgba(251,146,60,0.85)','rgba(129,140,248,0.85)',
 ];
 
-{% if por_categoria %}
+{% if hay_grafico_cat %}
 const dataCat = {{ datos_categorias_json|safe }};
 new Chart(document.getElementById('graficoCategorias'), {
     type: 'pie',
     data: {
         labels: dataCat.labels,
-        datasets: [{ data: dataCat.values, backgroundColor: COLORES, borderWidth: 2, borderColor: DARK ? '#16213e' : '#fff' }]
+        datasets: [{
+            data: dataCat.values,
+            backgroundColor: COLORES.slice(0, dataCat.labels.length),
+            borderWidth: 2,
+            borderColor: DARK ? '#16213e' : '#fff'
+        }]
     },
     options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom', labels: { color: TEXT_COLOR, padding: 10, font: {size:11} } },
-            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-CL')}` } }
+            legend: {
+                position: 'bottom',
+                labels: { color: TEXT_COLOR, padding: 8, font: {size:11} }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) {
+                        const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                        const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                        return ` $${ctx.parsed.toLocaleString('es-CL')} (${pct}%)`;
+                    }
+                }
+            }
         }
     }
 });
 {% endif %}
 
-{% if ingresos_por_tipo %}
+{% if hay_grafico_ing %}
 const dataIng = {{ datos_ingresos_json|safe }};
 new Chart(document.getElementById('graficoIngresos'), {
     type: 'pie',
     data: {
         labels: dataIng.labels,
-        datasets: [{ data: dataIng.values,
+        datasets: [{
+            data: dataIng.values,
             backgroundColor: ['rgba(16,185,129,0.85)','rgba(59,130,246,0.85)','rgba(168,85,247,0.85)','rgba(245,158,11,0.85)'],
-            borderWidth: 2, borderColor: DARK ? '#16213e' : '#fff' }]
+            borderWidth: 2,
+            borderColor: DARK ? '#16213e' : '#fff'
+        }]
     },
     options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom', labels: { color: TEXT_COLOR, padding: 10, font: {size:11} } },
-            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-CL')}` } }
+            legend: { position: 'bottom', labels: { color: TEXT_COLOR, padding: 8, font: {size:11} } },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) {
+                        const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                        const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                        return ` $${ctx.parsed.toLocaleString('es-CL')} (${pct}%)`;
+                    }
+                }
+            }
         }
     }
 });
@@ -269,19 +331,22 @@ new Chart(document.getElementById('graficoEvolucion'), {
         labels: {{ evolucion_labels|safe }},
         datasets: [
             { label: 'Ingresos', data: {{ evolucion_ingresos|safe }}, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
-            { label: 'Egresos',  data: {{ evolucion_egresos|safe }},  backgroundColor: 'rgba(239,68,68,0.7)',  borderRadius: 4 }
+            { label: 'Pagado',   data: {{ evolucion_egresos|safe }},  backgroundColor: 'rgba(239,68,68,0.7)',  borderRadius: 4 }
         ]
     },
     options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { position: 'top', labels: { color: TEXT_COLOR } },
             tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CL')}` } }
         },
         scales: {
-            y: { beginAtZero: true,
-                 ticks: { callback: v => `$${(v/1000).toFixed(0)}k`, color: TEXT_COLOR },
-                 grid: { color: GRID_COLOR } },
+            y: {
+                beginAtZero: true,
+                ticks: { callback: v => `$${(v/1000).toFixed(0)}k`, color: TEXT_COLOR },
+                grid: { color: GRID_COLOR }
+            },
             x: { ticks: { color: TEXT_COLOR }, grid: { display: false } }
         }
     }

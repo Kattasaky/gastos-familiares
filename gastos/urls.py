@@ -46,4 +46,9 @@ urlpatterns = [
 
     # Registro
     path('registro/', views.registro, name='registro'),
+
+    #categorias 
+    path('categorias/', views.lista_categorias, name='lista_categorias'),
+    path('categorias/nueva/', views.nueva_categoria, name='nueva_categoria'),
+    path('categorias/<int:pk>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
 ]

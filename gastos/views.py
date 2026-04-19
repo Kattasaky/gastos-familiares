@@ -421,3 +421,59 @@ def registro(request):
     else:
         form = UserCreationForm()
     return render(request, 'gastos/registro.html', {'form': form})
+
+# ═══════════════════════════════════════════════
+# PARTE 1: REEMPLAZAR las 3 vistas de categoría
+# en gastos/views.py (al final del archivo)
+# ═══════════════════════════════════════════════
+
+CATEGORIAS_SUGERIDAS = [
+    {'nombre': 'Supermercado', 'icono': '🛒', 'color': '#16a34a'},
+    {'nombre': 'Salud',        'icono': '🏥', 'color': '#dc2626'},
+    {'nombre': 'Arriendo',     'icono': '🏠', 'color': '#7c3aed'},
+    {'nombre': 'Transporte',   'icono': '🚗', 'color': '#2563eb'},
+    {'nombre': 'Educación',    'icono': '🎓', 'color': '#0891b2'},
+    {'nombre': 'Servicios',    'icono': '💡', 'color': '#d97706'},
+    {'nombre': 'Pyme',         'icono': '💼', 'color': '#059669'},
+    {'nombre': 'Restaurantes', 'icono': '🍽️', 'color': '#ea580c'},
+    {'nombre': 'Ropa',         'icono': '👕', 'color': '#db2777'},
+    {'nombre': 'Entretenimiento','icono':'🎬', 'color': '#7c3aed'},
+    {'nombre': 'Mascotas',     'icono': '🐾', 'color': '#65a30d'},
+    {'nombre': 'Viajes',       'icono': '✈️', 'color': '#0284c7'},
+    {'nombre': 'Tecnología',   'icono': '📱', 'color': '#4f46e5'},
+    {'nombre': 'Farmacia',     'icono': '💊', 'color': '#be123c'},
+    {'nombre': 'Hogar',        'icono': '🔧', 'color': '#92400e'},
+    {'nombre': 'Regalos',      'icono': '🎁', 'color': '#be185d'},
+]
+
+
+@login_required
+def lista_categorias(request):
+    categorias = Categoria.objects.all().order_by('nombre')
+    return render(request, 'gastos/categorias.html', {'categorias': categorias})
+
+
+@login_required
+def nueva_categoria(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        icono  = request.POST.get('icono', '💰').strip()
+        color  = request.POST.get('color', '#6366f1').strip()
+        if not nombre:
+            messages.error(request, 'El nombre no puede estar vacío.')
+        else:
+            Categoria.objects.create(nombre=nombre, icono=icono, color=color)
+            messages.success(request, f'Categoría "{nombre}" creada.')
+            return redirect('lista_categorias')
+    return render(request, 'gastos/form_categoria.html', {
+        'sugeridas': CATEGORIAS_SUGERIDAS,
+    })
+
+
+@login_required
+def eliminar_categoria(request, pk):
+    cat = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        cat.delete()
+        messages.success(request, 'Categoría eliminada.')
+    return redirect('lista_categorias')

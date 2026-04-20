@@ -4,61 +4,74 @@
 {% block contenido %}
 <h4 class="mb-4">🏷️ Nueva Categoría</h4>
 
-<div class="col-md-5">
+<div class="col-md-6">
     <form method="post">
         {% csrf_token %}
 
         <div class="mb-3">
             <label class="form-label">Nombre</label>
-            <input type="text" name="nombre" class="form-control"
+            <input type="text" name="nombre" id="inputNombre" class="form-control"
                    placeholder="Ej: Supermercado, Salud, Pyme" required>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Icono (emoji)</label>
-            <input type="text" name="icono" class="form-control"
-                   placeholder="Pegá un emoji: 🛒 🏥 💼 🚗"
-                   maxlength="10" value="💰">
-            <div class="mt-2 d-flex flex-wrap gap-2">
-                {% for emoji in "💰 🛒 🏥 🏠 🚗 🎓 💡 🎬 👕 🍽️ 🐾 💼 ✈️ 📱 🎮 💊 🔧 📚 🎁 💎"|split:" " %}
-                <button type="button" class="btn btn-outline-secondary btn-sm emoji-btn"
-                        onclick="document.querySelector('[name=icono]').value='{{ emoji }}'">
-                    {{ emoji }}
-                </button>
-                {% endfor %}
+            <input type="text" name="icono" id="inputIcono" class="form-control"
+                   placeholder="Pegá un emoji" maxlength="10" value="💰">
+            <div class="mt-2 d-flex flex-wrap gap-2" id="emojis">
+                <!-- Los emojis se generan con JS para evitar el filtro split que no existe en Django -->
             </div>
-            <small class="text-muted">Hacé clic en uno o pegá cualquier emoji.</small>
+            <small class="text-muted">Hacé clic en uno o escribí cualquier emoji.</small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Color</label>
             <div class="d-flex gap-2 align-items-center">
-                <input type="color" name="color" class="form-control form-control-color"
+                <input type="color" name="color" id="inputColor" class="form-control form-control-color"
                        value="#6366f1" style="width:60px; height:40px;">
                 <span class="text-muted small">Elegí un color para identificar la categoría.</span>
             </div>
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-dark">Guardar</button>
+            <button type="submit" class="btn btn-dark">Guardar categoría</button>
             <a href="{% url 'lista_categorias' %}" class="btn btn-outline-dark">Cancelar</a>
         </div>
     </form>
 </div>
 
 <hr class="my-4">
-<h6 class="text-muted">Categorías sugeridas para empezar:</h6>
+<h6 class="text-muted">Categorías sugeridas — hacé clic para completar el formulario:</h6>
 <div class="d-flex flex-wrap gap-2 mt-2">
-    {% for sugerida in sugeridas %}
-    <a href="?nombre={{ sugerida.nombre }}&icono={{ sugerida.icono }}"
-       class="badge text-decoration-none fs-6"
-       style="background-color:{{ sugerida.color }}; cursor:pointer"
-       onclick="document.querySelector('[name=nombre]').value='{{ sugerida.nombre }}';
-                document.querySelector('[name=icono]').value='{{ sugerida.icono }}';
-                document.querySelector('[name=color]').value='{{ sugerida.color }}';
-                return false;">
-        {{ sugerida.icono }} {{ sugerida.nombre }}
-    </a>
+    {% for s in sugeridas %}
+    <button type="button"
+            class="badge border-0 fs-6 py-2 px-3"
+            style="background-color:{{ s.color }};color:#fff;cursor:pointer"
+            onclick="
+                document.getElementById('inputNombre').value='{{ s.nombre }}';
+                document.getElementById('inputIcono').value='{{ s.icono }}';
+                document.getElementById('inputColor').value='{{ s.color }}';
+            ">
+        {{ s.icono }} {{ s.nombre }}
+    </button>
     {% endfor %}
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Genera los botones de emoji sin usar el filtro split de Django
+    const emojis = ['💰','🛒','🏥','🏠','🚗','🎓','💡','🎬','👕','🍽️','🐾','💼','✈️','📱','🎮','💊','🔧','📚','🎁','💎','👶','🍅','🔥','🐕','🚌'];
+    const contenedor = document.getElementById('emojis');
+    const inputIcono = document.getElementById('inputIcono');
+    emojis.forEach(e => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-secondary btn-sm';
+        btn.textContent = e;
+        btn.onclick = () => inputIcono.value = e;
+        contenedor.appendChild(btn);
+    });
+</script>
 {% endblock %}

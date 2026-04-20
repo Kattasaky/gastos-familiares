@@ -1,48 +1,174 @@
-{% extends 'gastos/base.html' %} {% load gastos_extras %} {% block titulo %}Metas de Ahorro{% endblock %} {% block contenido %}
-🎯 Plan de Ahorro
-+ Nueva meta
+{% extends 'gastos/base.html' %}
+{% load gastos_extras %}
+{% block titulo %}Metas de Ahorro{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>🎯 Plan de Ahorro</h4>
+    <a href="{% url 'nueva_meta' %}" class="btn btn-dark">+ Nueva meta</a>
+</div>
+
 {% if not activas and not completadas %}
-🎯
-Aún no tenés metas de ahorro
-Creá tu primera meta y empezá a ahorrar para lo que importa.
-
-Crear primera meta
-{% endif %} {% if activas %}
-{% for meta in activas %}
-{{ meta.icono }} {{ meta.nombre }}
-{% if meta.completada %} ¡Lista! 🎉 {% endif %}
-Ahorrado ${{ meta.monto_actual|floatformat:0 }}
-Objetivo ${{ meta.monto_objetivo|floatformat:0 }}
-Falta ${{ meta.monto_restante|floatformat:0 }}
-Progreso {{ meta.porcentaje }}%
-{% if meta.fecha_objetivo %} 📅 {{ meta.fecha_objetivo }} {% if meta.dias_restantes is not None %} {% if meta.dias_restantes > 0 %} — {{ meta.dias_restantes }} días {% elif meta.dias_restantes == 0 %} — ¡Hoy! {% else %} — Vencida hace {{ meta.dias_restantes|abs_value }} días {% endif %} {% endif %} {% if meta.ahorro_mensual_necesario %}
-💡 Ahorrar ${{ meta.ahorro_mensual_necesario|floatformat:0 }}/mes para llegar a tiempo {% endif %} {% endif %} {% if meta.descripcion %}
-{{ meta.descripcion }}
-
+<div class="text-center py-5">
+    <div style="font-size:3rem">🎯</div>
+    <h5 class="mt-3">Aún no tenés metas de ahorro</h5>
+    <p class="text-muted">Creá tu primera meta y empezá a ahorrar para lo que importa.</p>
+    <a href="{% url 'nueva_meta' %}" class="btn btn-dark">Crear primera meta</a>
+</div>
 {% endif %}
-{% if not meta.completada %} + Aporte {% endif %}
-{% csrf_token %} Archivar
-{% csrf_token %} Eliminar
-{% endfor %}
-{% endif %} {% if completadas %}
-📁 Archivadas
-{% for meta in completadas %}
-{{ meta.icono }} {{ meta.nombre }}
-Archivada
-${{ meta.monto_actual|floatformat:0 }} / ${{ meta.monto_objetivo|floatformat:0 }}
-{% csrf_token %} Eliminar
-{% endfor %}
-{% endif %} {# Modales de aporte #} {% for meta in activas %} {% if not meta.completada %}
-{{ meta.icono }} Aporte — {{ meta.nombre }}
 
-{% csrf_token %}
-Ahorrado: ${{ meta.monto_actual|floatformat:0 }} de ${{ meta.monto_objetivo|floatformat:0 }} ({{ meta.porcentaje }}%)
+{% if activas %}
+<div class="row g-3 mb-4">
+    {% for meta in activas %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">{{ meta.icono }} {{ meta.nombre }}</h5>
+                    {% if meta.completada %}
+                    <span class="badge bg-success">¡Lista! 🎉</span>
+                    {% endif %}
+                </div>
 
-Monto del aporte
-$ 
-Fecha 
-dd-mm-aaaa
-Notas (opcional) 
-Ej: Ahorro de este mes
-Cancelar Guardar
-{% endif %} {% endfor %} {% endblock %}
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-4">
+                        <small class="text-muted d-block">Ahorrado</small>
+                        <strong>${{ meta.monto_actual|floatformat:0 }}</strong>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted d-block">Objetivo</small>
+                        <strong>${{ meta.monto_objetivo|floatformat:0 }}</strong>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted d-block">Falta</small>
+                        <strong>${{ meta.monto_restante|floatformat:0 }}</strong>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Progreso</span>
+                        <span>{{ meta.porcentaje }}%</span>
+                    </div>
+                    <div class="progress" style="height:10px">
+                        <div class="progress-bar bg-success" style="width:{{ meta.porcentaje }}%"></div>
+                    </div>
+                </div>
+
+                {% if meta.fecha_objetivo %}
+                <p class="small text-muted mb-1">
+                    📅 {{ meta.fecha_objetivo }}
+                    {% if meta.dias_restantes is not None %}
+                        {% if meta.dias_restantes > 0 %}
+                            — {{ meta.dias_restantes }} días restantes
+                        {% elif meta.dias_restantes == 0 %}
+                            — ¡Hoy es el día!
+                        {% else %}
+                            — Vencida hace {{ meta.dias_restantes|abs_value }} días
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% if meta.ahorro_mensual_necesario %}
+                <p class="small text-muted">
+                    💡 Ahorrá ${{ meta.ahorro_mensual_necesario|floatformat:0 }}/mes para llegar a tiempo
+                </p>
+                {% endif %}
+                {% endif %}
+
+                {% if meta.descripcion %}
+                <p class="small text-muted">{{ meta.descripcion }}</p>
+                {% endif %}
+
+                <div class="d-flex gap-2 mt-3 flex-wrap">
+                    {% if not meta.completada %}
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalAporte{{ meta.pk }}">
+                        + Aporte
+                    </button>
+                    {% endif %}
+                    <form method="post" action="{% url 'archivar_meta' meta.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-secondary">Archivar</button>
+                    </form>
+                    <form method="post" action="{% url 'eliminar_meta' meta.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('¿Eliminar esta meta?')">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if completadas %}
+<h5 class="mt-4">📁 Archivadas</h5>
+<div class="row g-3">
+    {% for meta in completadas %}
+    <div class="col-md-4">
+        <div class="card h-100 opacity-75">
+            <div class="card-body">
+                <h6>{{ meta.icono }} {{ meta.nombre }}</h6>
+                <span class="badge bg-secondary mb-2">Archivada</span>
+                <p class="small text-muted mb-2">
+                    ${{ meta.monto_actual|floatformat:0 }} / ${{ meta.monto_objetivo|floatformat:0 }}
+                </p>
+                <form method="post" action="{% url 'eliminar_meta' meta.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('¿Eliminar esta meta?')">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Modales de aporte -->
+{% for meta in activas %}
+{% if not meta.completada %}
+<div class="modal fade" id="modalAporte{{ meta.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ meta.icono }} Aporte — {{ meta.nombre }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'registrar_aporte' meta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Ahorrado: <strong>${{ meta.monto_actual|floatformat:0 }}</strong>
+                        de ${{ meta.monto_objetivo|floatformat:0 }}
+                        ({{ meta.porcentaje }}%)
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Monto del aporte</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="monto" class="form-control" required min="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas (opcional)</label>
+                        <input type="text" name="notas" class="form-control" placeholder="Ej: Ahorro de este mes">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}

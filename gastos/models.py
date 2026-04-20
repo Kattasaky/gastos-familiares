@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from decimal import Decimal
 
 
 class Categoria(models.Model):
@@ -61,12 +62,20 @@ class Gasto(models.Model):
 
 
 class ItemCompra(models.Model):
+    FRECUENCIA_CHOICES = [
+        ('semanal', 'Semanal'),
+        ('quincenal', 'Quincenal'),
+        ('mensual', 'Mensual'),
+        ('unica', 'Unica vez'),
+    ]
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lista_compras')
     nombre = models.CharField(max_length=150)
     cantidad = models.PositiveIntegerField(default=1)
     valor_aprox = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
     comprado = models.BooleanField(default=False)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
+    frecuencia = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES, default='mensual')
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -228,12 +237,12 @@ class MetaAhorro(models.Model):
     def monto_actual(self):
         from django.db.models import Sum
         resultado = self.aportes.aggregate(total=Sum('monto'))['total']
-        return resultado or 0
+        return resultado or Decimal('0')
 
     @property
     def monto_restante(self):
         restante = self.monto_objetivo - self.monto_actual
-        return max(restante, 0)
+        return max(restante, Decimal('0'))
 
     @property
     def porcentaje(self):
@@ -256,7 +265,8 @@ class MetaAhorro(models.Model):
     def ahorro_mensual_necesario(self):
         dias = self.dias_restantes
         if dias and dias > 0 and self.monto_restante > 0:
-            meses = max(dias / 30, 1)
+            # CORREGIDO: convertir todo a Decimal para evitar error de tipos
+            meses = max(Decimal(str(dias)) / Decimal('30'), Decimal('1'))
             return int(self.monto_restante / meses)
         return None
 

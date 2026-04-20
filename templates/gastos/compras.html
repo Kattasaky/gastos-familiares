@@ -1,66 +1,133 @@
 {% extends 'gastos/base.html' %}
-
 {% block titulo %}Lista de Compras{% endblock %}
 
 {% block contenido %}
-<div class="d-flex justify-content-between mb-4">
-    <h4>Lista de Compras</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>🛒 Lista de Compras</h4>
     <form method="post" action="{% url 'limpiar_comprados' %}">
         {% csrf_token %}
-        <button class="btn btn-outline-danger">Limpiar comprados</button>
+        <button class="btn btn-outline-danger"
+                onclick="return confirm('¿Desmarcar todos los comprados para empezar de nuevo?')">
+            Limpiar comprados
+        </button>
     </form>
 </div>
 
-<form method="post" action="{% url 'agregar_compra' %}" class="row mb-4">
-    {% csrf_token %}
-    <div class="col-md-5">
-        <input type="text" name="nombre" class="form-control" placeholder="Ítem" required>
-    </div>
-    <div class="col-md-2">
-        <input type="number" name="cantidad" class="form-control" value="1" min="1">
-    </div>
-    <div class="col-md-2">
-        <input type="number" name="valor_aprox" class="form-control" placeholder="Valor aprox">
-    </div>
-    <div class="col-md-3">
-        <select name="categoria" class="form-select">
-            <option value="">Sin categoría</option>
-            {% for c in categorias %}
-            <option value="{{ c.pk }}">{{ c }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <button class="btn btn-dark w-100">Agregar</button>
-    </div>
-</form>
-
-<ul class="list-group">
-    {% for item in items %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-        <form method="post" action="{% url 'toggle_compra' item.pk %}">
+<!-- Formulario agregar ítem -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="post" action="{% url 'agregar_compra' %}">
             {% csrf_token %}
-            <button class="btn btn-sm {% if item.comprado %}btn-success{% else %}btn-outline-secondary{% endif %}">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small fw-bold">Ítem</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej: Leche, Pan" required>
+                </div>
+                <div class="col-6 col-md-1">
+                    <label class="form-label small fw-bold">Cantidad</label>
+                    <input type="number" name="cantidad" class="form-control" value="1" min="1">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-bold">Valor aprox.</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="valor_aprox" class="form-control" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-bold">Categoría</label>
+                    <select name="categoria" class="form-select">
+                        <option value="">Sin categoría</option>
+                        {% for c in categorias %}
+                        <option value="{{ c.pk }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-bold">Frecuencia</label>
+                    <select name="frecuencia" class="form-select">
+                        <option value="mensual">Mensual</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="quincenal">Quincenal</option>
+                        <option value="unica">Única vez</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-1">
+                    <button class="btn btn-dark w-100">Agregar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Filtro por frecuencia -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <span class="text-muted small align-self-center">Filtrar:</span>
+    <a href="?frecuencia=" class="btn btn-sm {% if not frecuencia_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">Todos</a>
+    <a href="?frecuencia=semanal" class="btn btn-sm {% if frecuencia_filtro == 'semanal' %}btn-dark{% else %}btn-outline-dark{% endif %}">Semanal</a>
+    <a href="?frecuencia=quincenal" class="btn btn-sm {% if frecuencia_filtro == 'quincenal' %}btn-dark{% else %}btn-outline-dark{% endif %}">Quincenal</a>
+    <a href="?frecuencia=mensual" class="btn btn-sm {% if frecuencia_filtro == 'mensual' %}btn-dark{% else %}btn-outline-dark{% endif %}">Mensual</a>
+    <a href="?frecuencia=unica" class="btn btn-sm {% if frecuencia_filtro == 'unica' %}btn-dark{% else %}btn-outline-dark{% endif %}">Única vez</a>
+</div>
+
+<!-- Lista de ítems -->
+<ul class="list-group mb-3">
+    {% for item in items %}
+    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+        <!-- Botón toggle comprado -->
+        <form method="post" action="{% url 'toggle_compra' item.pk %}" class="mb-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm {% if item.comprado %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                    style="width:36px">
                 {% if item.comprado %}✓{% else %}○{% endif %}
             </button>
         </form>
-        <span {% if item.comprado %}style="text-decoration:line-through"{% endif %}>
-            {{ item.nombre }} (x{{ item.cantidad }})
-        </span>
-        <span class="text-muted small">{{ item.categoria }}</span>
+
+        <!-- Nombre + info -->
+        <div class="flex-grow-1">
+            <span {% if item.comprado %}style="text-decoration:line-through;opacity:0.6"{% endif %}>
+                <strong>{{ item.nombre }}</strong> (x{{ item.cantidad }})
+            </span>
+            <div class="d-flex gap-2 flex-wrap mt-1">
+                {% if item.categoria %}
+                <span class="badge" style="background-color:{{ item.categoria.color }};color:#fff;font-size:11px">
+                    {{ item.categoria }}
+                </span>
+                {% endif %}
+                <span class="badge bg-secondary" style="font-size:11px">
+                    {% if item.frecuencia == 'semanal' %}🔁 Semanal
+                    {% elif item.frecuencia == 'quincenal' %}🔁 Quincenal
+                    {% elif item.frecuencia == 'mensual' %}📅 Mensual
+                    {% else %}1️⃣ Única vez
+                    {% endif %}
+                </span>
+                {% if item.valor_aprox %}
+                <span class="text-muted small">${{ item.valor_aprox|floatformat:0 }} c/u</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Eliminar -->
+        <form method="post" action="{% url 'eliminar_compra' item.pk %}" class="mb-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">✕</button>
+        </form>
     </li>
     {% empty %}
-    <li class="list-group-item text-center">Lista vacía</li>
+    <li class="list-group-item text-center text-muted py-4">
+        La lista está vacía. ¡Agregá tu primer ítem!
+    </li>
     {% endfor %}
 </ul>
-{% endblock %}
 
+<!-- Total estimado -->
 {% if items %}
-<div class="mt-3 text-end">
-    <strong>Total estimado: $
-    {% with total=0 %}
-        {{ items|length }}
-    {% endwith %}
-    </strong>
+<div class="card">
+    <div class="card-body py-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Total estimado (pendientes)</span>
+        <strong>${{ total_estimado|floatformat:0 }}</strong>
+    </div>
 </div>
 {% endif %}
+
+{% endblock %}

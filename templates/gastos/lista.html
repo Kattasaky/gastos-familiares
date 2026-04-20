@@ -1,51 +1,106 @@
 {% extends 'gastos/base.html' %}
-
 {% block titulo %}Lista de Gastos{% endblock %}
 
 {% block contenido %}
-<div class="d-flex justify-content-between mb-4">
-    <h4>Mis Gastos</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>Mis Gastos del mes</h4>
     <a href="{% url 'nuevo_gasto' %}" class="btn btn-dark">+ Nuevo gasto</a>
 </div>
 
+<!-- Resumen rápido -->
+<div class="row g-2 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body py-2 text-center">
+                <small class="d-block">Pagado</small>
+                <strong>${{ total_pagado|floatformat:0 }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body py-2 text-center">
+                <small class="d-block">Pendiente</small>
+                <strong>${{ total_pendiente|floatformat:0 }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body py-2 text-center">
+                <small class="d-block">Vencido</small>
+                <strong>${{ total_vencido|floatformat:0 }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-dark h-100">
+            <div class="card-body py-2 text-center">
+                <small class="d-block">Total real debitado</small>
+                <strong>${{ total_pagado|floatformat:0 }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtro por estado -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <span class="text-muted small align-self-center">Ver:</span>
+    <a href="?estado=" class="btn btn-sm {% if not estado_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">Todos</a>
+    <a href="?estado=pagado" class="btn btn-sm {% if estado_filtro == 'pagado' %}btn-success{% else %}btn-outline-success{% endif %}">✅ Pagados</a>
+    <a href="?estado=pendiente" class="btn btn-sm {% if estado_filtro == 'pendiente' %}btn-warning{% else %}btn-outline-warning{% endif %}">⏳ Pendientes</a>
+    <a href="?estado=vencido" class="btn btn-sm {% if estado_filtro == 'vencido' %}btn-danger{% else %}btn-outline-danger{% endif %}">❌ Vencidos</a>
+</div>
+
 <div class="table-responsive">
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Descripción</th>
-            <th>Monto</th>
-            <th>Categoría</th>
-            <th>Fecha</th>
-            <th>Prioridad</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for g in gastos %}
-        <tr>
-            <td>{{ g.descripcion }}</td>
-            <td>${{ g.monto|floatformat:0 }}</td>
-            <td>{{ g.categoria }}</td>
-            <td>{{ g.fecha }}</td>
-            <td>{{ g.get_prioridad_display }}</td>
-            <td>{{ g.get_estado_display }}</td>
-            <td class="d-flex gap-1">
-                <a href="{% url 'editar_gasto' g.pk %}" class="btn btn-sm btn-outline-dark">Editar</a>
-                <form method="post" action="{% url 'marcar_pagado' g.pk %}">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-success">Pagado</button>
-                </form>
-                <form method="post" action="{% url 'eliminar_gasto' g.pk %}">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-danger">Eliminar</button>
-                </form>
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="text-center">No hay gastos registrados</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Descripción</th>
+                <th class="text-end">Monto</th>
+                <th>Categoría</th>
+                <th>Fecha</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for g in gastos %}
+            <tr class="{% if g.estado == 'pagado' %}table-success{% elif g.estado == 'vencido' %}table-danger{% elif g.estado == 'pendiente' %}table-warning{% endif %}">
+                <td>{{ g.descripcion }}</td>
+                <td class="text-end">${{ g.monto|floatformat:0 }}</td>
+                <td>{{ g.categoria }}</td>
+                <td>{{ g.fecha }}</td>
+                <td>{{ g.get_prioridad_display }}</td>
+                <td>
+                    <span class="badge {% if g.estado == 'pagado' %}bg-success{% elif g.estado == 'vencido' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                        {{ g.get_estado_display }}
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <a href="{% url 'editar_gasto' g.pk %}" class="btn btn-sm btn-outline-dark">Editar</a>
+                        {% if g.estado != 'pagado' %}
+                        <form method="post" action="{% url 'marcar_pagado' g.pk %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-success">Pagado</button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'eliminar_gasto' g.pk %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-danger"
+                                    onclick="return confirm('¿Eliminar este gasto?')">Eliminar</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">No hay gastos en este período</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

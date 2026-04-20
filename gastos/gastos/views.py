@@ -36,33 +36,15 @@ def inicio(request):
 
 @login_required
 def lista_gastos(request):
-    from django.db.models import Sum
     services.actualizar_estados_vencidos()
+    # Solo muestra gastos del mes actual para no saturar la vista
     hoy = timezone.now().date()
-    estado_filtro = request.GET.get('estado', '')
-
-    gastos_mes = Gasto.objects.filter(
+    gastos = Gasto.objects.filter(
         usuario=request.user,
         fecha__year=hoy.year,
         fecha__month=hoy.month,
     ).select_related('categoria')
-
-    # Totales reales para las tarjetas
-    total_pagado    = gastos_mes.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
-    total_pendiente = gastos_mes.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
-    total_vencido   = gastos_mes.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
-
-    # Filtro opcional por estado
-    if estado_filtro:
-        gastos_mes = gastos_mes.filter(estado=estado_filtro)
-
-    return render(request, 'gastos/lista.html', {
-        'gastos': gastos_mes,
-        'estado_filtro': estado_filtro,
-        'total_pagado': total_pagado,
-        'total_pendiente': total_pendiente,
-        'total_vencido': total_vencido,
-    })
+    return render(request, 'gastos/lista.html', {'gastos': gastos})
 
 
 @login_required

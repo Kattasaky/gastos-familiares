@@ -310,7 +310,7 @@ def registrar_pago_prestamo(usuario, prestamo_id, monto, fecha=None, notas=''):
 
 
 def resumen_prestamos(usuario):
-    prestamos = Prestamo.objects.filter(usuario=usuario, estado='vigente')
+    prestamos = Prestamo.objects.filter(usuario=usuario, estado__in=['vigente', 'vencido'])
     debo = prestamos.filter(tipo='recibido').aggregate(
         total=Sum('monto_total'), pagado=Sum('monto_pagado'))
     me_deben = prestamos.filter(tipo='otorgado').aggregate(

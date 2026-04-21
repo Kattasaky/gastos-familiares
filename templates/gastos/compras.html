@@ -4,13 +4,17 @@
 {% block contenido %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>🛒 Lista de Compras</h4>
-    <form method="post" action="{% url 'limpiar_comprados' %}">
-        {% csrf_token %}
-        <button class="btn btn-outline-danger"
-                onclick="return confirm('¿Desmarcar todos los comprados para empezar de nuevo?')">
-            Limpiar comprados
-        </button>
-    </form>
+    <div class="d-flex gap-2">
+        <a href="{% url 'exportar_compras_excel' %}{% if categoria_activa %}?categoria={{ categoria_activa }}{% endif %}"
+           class="btn btn-success btn-sm">📥 Excel</a>
+        <form method="post" action="{% url 'limpiar_comprados' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm"
+                    onclick="return confirm('¿Desmarcar todos los comprados para empezar de nuevo?')">
+                Limpiar comprados
+            </button>
+        </form>
+    </div>
 </div>
 
 <!-- Formulario agregar ítem -->
@@ -60,52 +64,86 @@
     </div>
 </div>
 
-<!-- Filtro por frecuencia -->
-<div class="d-flex gap-2 mb-3 flex-wrap">
-    <span class="text-muted small align-self-center">Filtrar:</span>
-    <a href="?frecuencia=" class="btn btn-sm {% if not frecuencia_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">Todos</a>
-    <a href="?frecuencia=semanal" class="btn btn-sm {% if frecuencia_filtro == 'semanal' %}btn-dark{% else %}btn-outline-dark{% endif %}">Semanal</a>
-    <a href="?frecuencia=quincenal" class="btn btn-sm {% if frecuencia_filtro == 'quincenal' %}btn-dark{% else %}btn-outline-dark{% endif %}">Quincenal</a>
-    <a href="?frecuencia=mensual" class="btn btn-sm {% if frecuencia_filtro == 'mensual' %}btn-dark{% else %}btn-outline-dark{% endif %}">Mensual</a>
-    <a href="?frecuencia=unica" class="btn btn-sm {% if frecuencia_filtro == 'unica' %}btn-dark{% else %}btn-outline-dark{% endif %}">Única vez</a>
+
+<!-- Filtro por categoría -->
+{% if categorias %}
+<div class="d-flex gap-2 mb-2 flex-wrap">
+    <span class="text-muted small align-self-center">Categoría:</span>
+    <a href="?frecuencia={{ frecuencia_filtro }}"
+       class="btn btn-sm {% if not categoria_activa %}btn-dark{% else %}btn-outline-dark{% endif %}">
+        Todas
+    </a>
+    {% for c in categorias %}
+    <a href="?categoria={{ c.pk }}&frecuencia={{ frecuencia_filtro }}"
+       class="btn btn-sm {% if categoria_activa == c.pk %}btn-dark{% else %}btn-outline-dark{% endif %}"
+       style="border-color:{{ c.color }}; {% if categoria_activa == c.pk %}background-color:{{ c.color }};color:#fff{% endif %}">
+        {{ c }}
+    </a>
+    {% endfor %}
 </div>
+{% endif %}
+
 
 <!-- Lista de ítems -->
 <ul class="list-group mb-3">
     {% for item in items %}
     <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-        <!-- Botón toggle comprado -->
-        <form method="post" action="{% url 'toggle_compra' item.pk %}" class="mb-0">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm {% if item.comprado %}btn-success{% else %}btn-outline-secondary{% endif %}"
-                    style="width:36px">
-                {% if item.comprado %}✓{% else %}○{% endif %}
-            </button>
-        </form>
+    <!-- Botón toggle comprado -->
+    <form method="post" action="{% url 'toggle_compra' item.pk %}" class="mb-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm {% if item.comprado %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                style="width:36px">
+            {% if item.comprado %}✓{% else %}○{% endif %}
+        </button>
+    </form>
 
-        <!-- Nombre + info -->
-        <div class="flex-grow-1">
-            <span {% if item.comprado %}style="text-decoration:line-through;opacity:0.6"{% endif %}>
-                <strong>{{ item.nombre }}</strong> (x{{ item.cantidad }})
-            </span>
-            <div class="d-flex gap-2 flex-wrap mt-1">
-                {% if item.categoria %}
+    <!-- Nombre + info -->
+    <div class="flex-grow-1">
+        <span {% if item.comprado %}style="text-decoration:line-through;opacity:0.6"{% endif %}>
+            <strong>{{ item.nombre }}</strong> (x{{ item.cantidad }})
+        </span>
+        <div class="d-flex gap-2 flex-wrap mt-1">
+            {% if item.categoria %}
                 <span class="badge" style="background-color:{{ item.categoria.color }};color:#fff;font-size:11px">
                     {{ item.categoria }}
                 </span>
+            {% endif %}
+            <span class="badge bg-secondary" style="font-size:11px">
+                {% if item.frecuencia == 'semanal' %}🔁 Semanal
+                {% elif item.frecuencia == 'quincenal' %}🔁 Quincenal
+                {% elif item.frecuencia == 'mensual' %}📅 Mensual
+                {% else %}1️⃣ Única vez
                 {% endif %}
-                <span class="badge bg-secondary" style="font-size:11px">
-                    {% if item.frecuencia == 'semanal' %}🔁 Semanal
-                    {% elif item.frecuencia == 'quincenal' %}🔁 Quincenal
-                    {% elif item.frecuencia == 'mensual' %}📅 Mensual
-                    {% else %}1️⃣ Única vez
-                    {% endif %}
-                </span>
-                {% if item.valor_aprox %}
+            </span>
+            {% if item.valor_aprox %}
                 <span class="text-muted small">${{ item.valor_aprox|floatformat:0 }} c/u</span>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
+    </div>
+
+    <!-- Editar precio rápido -->
+    <form method="post" action="{% url 'editar_compra' item.pk %}" class="mb-0 d-flex gap-1 align-items-center">
+        {% csrf_token %}
+        <input type="number" name="valor_aprox"
+               value="{{ item.valor_aprox|default:'' }}"
+               class="form-control form-control-sm bg-light text-dark"
+               style="width:90px"
+               placeholder="$precio">
+        <button type="submit" class="btn btn-sm btn-warning" title="Guardar precio">💾</button>
+    </form>
+
+    <!-- Botón editar completo -->
+    <a href="{% url 'editar_item' item.pk %}" class="btn btn-sm btn-info">✏️ Editar</a>
+
+    <!-- Eliminar -->
+    <form method="post" action="{% url 'eliminar_compra' item.pk %}" class="mb-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger">✕</button>
+    </form>
+</li>
+
+
+
 
         <!-- Eliminar -->
         <form method="post" action="{% url 'eliminar_compra' item.pk %}" class="mb-0">
@@ -122,10 +160,20 @@
 
 <!-- Total estimado -->
 {% if items %}
-<div class="card">
-    <div class="card-body py-2 d-flex justify-content-between align-items-center">
-        <span class="text-muted small">Total estimado (pendientes)</span>
-        <strong>${{ total_estimado|floatformat:0 }}</strong>
+<div class="card border-0" style="background-color:#2c2f3a">
+    <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <span style="color:#adb5bd" class="small">
+                💸 Total pendiente{% if categoria_activa %} (categoría filtrada){% endif %}
+            </span>
+            <strong style="color:#ffffff">${{ total_pendiente|floatformat:0 }}</strong>
+        </div>
+        {% if categoria_activa %}
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <span style="color:#adb5bd" class="small">Total general (todas las categorías)</span>
+            <span style="color:#ffffff">${{ total_estimado|floatformat:0 }}</span>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

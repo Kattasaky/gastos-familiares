@@ -1,0 +1,16 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Editar Ítem{% endblock %}
+
+{% block contenido %}
+<div class="card">
+    <div class="card-body">
+        <h4 class="mb-3">✏️ Editar ítem: {{ item.nombre }}</h4>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a href="{% url 'lista_compras' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

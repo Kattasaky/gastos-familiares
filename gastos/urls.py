@@ -52,4 +52,8 @@ urlpatterns = [
 
     # Registro
     path('registro/', views.registro, name='registro'),
+    path('compras/exportar/', views.exportar_compras_excel, name='exportar_compras_excel'),
+    path('compras/<int:pk>/editar/', views.editar_compra, name='editar_compra'),
+    path('compras/<int:pk>/editar_item/', views.editar_item, name='editar_item'),
+
 ]

@@ -126,9 +126,21 @@ def eliminar_gasto(request, pk):
 @login_required
 def lista_compras(request):
     frecuencia_filtro = request.GET.get('frecuencia', '')
+    categoria_id = request.GET.get('categoria')          # ← nuevo
+
     items_qs = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
+
     if frecuencia_filtro:
         items_qs = items_qs.filter(frecuencia=frecuencia_filtro)
+    if categoria_id:                                     # ← nuevo
+        items_qs = items_qs.filter(categoria_id=categoria_id)
+
+    # Total solo de los pendientes (sin cambiar tu función original)
+    total_pendiente = sum(
+        (item.valor_aprox or 0) * item.cantidad
+        for item in items_qs
+        if not item.comprado
+    )
 
     total_estimado = services.total_estimado_compras(request.user)
 
@@ -137,6 +149,8 @@ def lista_compras(request):
         'categorias': Categoria.objects.all(),
         'frecuencia_filtro': frecuencia_filtro,
         'total_estimado': total_estimado,
+        'categoria_activa': int(categoria_id) if categoria_id else None,  # ← nuevo
+        'total_pendiente': total_pendiente,                               # ← nuevo
     })
 
 
@@ -181,6 +195,96 @@ def limpiar_comprados(request):
         n = services.limpiar_comprados(request.user)
         messages.success(request, f'Lista reiniciada. {n} ítem(s) procesados.')
     return redirect('lista_compras')
+
+
+@login_required
+def exportar_compras_excel(request):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    categoria_id = request.GET.get('categoria')
+    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
+    if categoria_id:
+        items = items.filter(categoria_id=categoria_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Lista de Compras"
+
+    # Estilo encabezado
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1a1a2e")
+    center = Alignment(horizontal='center')
+
+    encabezados = ['Ítem', 'Cantidad', 'Precio unitario aprox', 'Total aprox', 'Categoría', 'Estado']
+    for col, titulo in enumerate(encabezados, 1):
+        celda = ws.cell(row=1, column=col, value=titulo)
+        celda.font = header_font
+        celda.fill = header_fill
+        celda.alignment = center
+
+    total_pendiente = 0
+    for row, item in enumerate(items, 2):
+        precio = float(item.valor_aprox or 0)
+        total_fila = precio * item.cantidad
+        estado = '✓ Comprado' if item.comprado else '○ Pendiente'
+
+        ws.cell(row=row, column=1, value=item.nombre)
+        ws.cell(row=row, column=2, value=item.cantidad)
+        ws.cell(row=row, column=3, value=precio if precio else '')
+        ws.cell(row=row, column=4, value=total_fila if precio else '')
+        ws.cell(row=row, column=5, value=str(item.categoria) if item.categoria else 'Sin categoría')
+        ws.cell(row=row, column=6, value=estado)
+
+        if not item.comprado:
+            total_pendiente += total_fila
+
+    # Fila de total al final
+    fila_total = items.count() + 2
+    ws.cell(row=fila_total, column=3, value='TOTAL PENDIENTE')
+    ws.cell(row=fila_total, column=3).font = Font(bold=True)
+    ws.cell(row=fila_total, column=4, value=total_pendiente)
+    ws.cell(row=fila_total, column=4).font = Font(bold=True)
+
+    # Ancho automático de columnas
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        ws.column_dimensions[col[0].column_letter].width = max_len + 4
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+    hoy = timezone.now().date()
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename=compras_{hoy}.xlsx'
+    wb.save(response)
+    return response
+
+@login_required
+def editar_compra(request, pk):
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        valor = request.POST.get('valor_aprox')
+        item.valor_aprox = valor if valor else None
+        item.save()
+    return redirect('lista_compras')
+
+from .forms import ItemCompraForm
+
+@login_required
+def editar_item(request, pk):
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        form = ItemCompraForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Ítem actualizado correctamente.")
+            return redirect('lista_compras')
+    else:
+        form = ItemCompraForm(instance=item)
+    return render(request, 'gastos/editar_item.html', {'form': form, 'item': item})
+
 
 
 # ─────────────────────────────────────────────
@@ -228,11 +332,6 @@ def eliminar_recurrente(request, pk):
 
 @login_required
 def pagar_cuota_mes(request, pk):
-    """
-    CORREGIDO: Registra el pago del mes/cuota como gasto y muestra mensaje
-    de confirmación, pero NO elimina ni desactiva el recurrente.
-    Solo lo desactiva si completó todas las cuotas.
-    """
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
 
     # Crear el gasto del mes
@@ -247,15 +346,15 @@ def pagar_cuota_mes(request, pk):
         estado='pagado',
     )
 
-    # Si es en cuotas, sumar una cuota pagada
-    if pago.frecuencia == 'cuotas':
+    # Siempre incrementar cuota si existe total_cuotas
+    if pago.total_cuotas:
         pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
-        # Solo desactivar si terminó todas las cuotas
-        if pago.total_cuotas and pago.cuotas_pagadas >= pago.total_cuotas:
+
+        if pago.cuotas_pagadas >= pago.total_cuotas:
             pago.activo = False
             messages.success(request, f'✅ Última cuota pagada. "{pago.descripcion}" completado.')
         else:
-            restantes = (pago.total_cuotas or 0) - pago.cuotas_pagadas
+            restantes = pago.total_cuotas - pago.cuotas_pagadas
             messages.success(
                 request,
                 f'✅ Cuota {pago.cuotas_pagadas}/{pago.total_cuotas} pagada. '
@@ -263,13 +362,15 @@ def pagar_cuota_mes(request, pk):
             )
         pago.save(update_fields=['cuotas_pagadas', 'activo'])
     else:
+        # Caso sin cuotas definidas (mensual/semanal indefinido)
         messages.success(
             request,
-            f'✅ "{pago.descripcion}" registrado como pagado este mes. '
-            f'Seguirá apareciendo el mes que viene.'
+            f'✅ "{pago.descripcion}" registrado como pagado este {pago.frecuencia}. '
+            f'Seguirá apareciendo en la lista.'
         )
 
     return redirect('lista_recurrentes')
+
 
 
 @login_required

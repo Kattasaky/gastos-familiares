@@ -1,0 +1,25 @@
+{
+    "name": "Gastos Familiares",
+    "short_name": "Gastos",
+    "description": "Control de gastos del hogar",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a1a2e",
+    "theme_color": "#212529",
+    "lang": "es",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/static/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/static/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

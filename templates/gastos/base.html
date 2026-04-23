@@ -1,9 +1,19 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Gastos Familiares{% endblock %}</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#212529">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gastos">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -68,13 +78,13 @@
             transition: background 0.2s;
         }
         [data-theme="dark"] label,
-[data-theme="dark"] .form-label {
-    color: #e0e0e0 !important;
-}
-[data-theme="dark"] .form-select option {
-    background-color: #16213e;
-    color: #e0e0e0;
-}
+        [data-theme="dark"] .form-label {
+            color: #e0e0e0 !important;
+        }
+        [data-theme="dark"] .form-select option {
+            background-color: #16213e;
+            color: #e0e0e0;
+        }
         [data-theme="dark"] .table-dark th {
             background-color: #0a0a1a !important;
             color: #e0e0e0 !important;
@@ -125,6 +135,32 @@
             h4 { font-size: 18px; }
             .card h3 { font-size: 20px; }
         }
+
+        /* Banner de instalación PWA */
+        #pwa-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #212529;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 9999;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+        }
+        #pwa-banner button {
+            margin: 4px;
+            padding: 6px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -148,6 +184,13 @@
     </div>
 </nav>
 
+<!-- Banner de instalación PWA -->
+<div id="pwa-banner">
+    <p class="mb-2" style="font-size:14px">📲 ¿Instalar Gastos Familiares en tu celular?</p>
+    <button id="btn-instalar" style="background:#6366f1;color:white">Instalar</button>
+    <button id="btn-cerrar-banner" style="background:#444;color:white">Ahora no</button>
+</div>
+
 <div class="container mt-4">
     {% if messages %}
         {% for message in messages %}
@@ -162,6 +205,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Dark mode
     const btn = document.getElementById('btnDarkMode');
     const html = document.documentElement;
     const temaGuardado = localStorage.getItem('tema') || 'light';
@@ -175,6 +219,44 @@
         html.setAttribute('data-theme', t);
         btn.textContent = t === 'dark' ? '☀️' : '🌙';
     }
+
+    // Registrar Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW registrado:', reg.scope))
+                .catch(err => console.log('SW error:', err));
+        });
+    }
+
+    // Banner de instalación PWA
+    let deferredPrompt;
+    const banner = document.getElementById('pwa-banner');
+    const btnInstalar = document.getElementById('btn-instalar');
+    const btnCerrar = document.getElementById('btn-cerrar-banner');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Mostrar banner solo si no lo cerró antes
+        if (!localStorage.getItem('pwa-rechazado')) {
+            banner.style.display = 'block';
+        }
+    });
+
+    btnInstalar.addEventListener('click', async () => {
+        banner.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        }
+    });
+
+    btnCerrar.addEventListener('click', () => {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa-rechazado', '1');
+    });
 </script>
 {% block scripts %}{% endblock %}
 </body>

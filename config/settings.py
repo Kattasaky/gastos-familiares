@@ -55,12 +55,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# ─────────────────────────────────────────────
-# BASE DE DATOS
-# IMPORTANTE: usa db.sqlite3 (nombre estándar).
-# Si tenías gastos.sqlite3, renombrala a db.sqlite3
-# o borra una de las dos y deja solo esta.
-# ─────────────────────────────────────────────
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -80,8 +74,19 @@ TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+# ─────────────────────────────────────────────
+# ARCHIVOS ESTÁTICOS (CSS, JS, íconos PWA)
+# ─────────────────────────────────────────────
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Carpetas adicionales donde Django busca archivos estáticos
+STATICFILES_DIRS = [
+    BASE_DIR / 'gastos' / 'static',
+]
+
+# WhiteNoise sirve los estáticos en producción (Render)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

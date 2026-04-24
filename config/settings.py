@@ -75,18 +75,20 @@ USE_I18N = True
 USE_TZ = True
 
 # ─────────────────────────────────────────────
-# ARCHIVOS ESTÁTICOS (CSS, JS, íconos PWA)
+# ARCHIVOS ESTÁTICOS
+# WhiteNoise sirve desde STATIC_ROOT en producción
 # ─────────────────────────────────────────────
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Carpetas adicionales donde Django busca archivos estáticos
 STATICFILES_DIRS = [
     BASE_DIR / 'gastos' / 'static',
 ]
 
-# WhiteNoise sirve los estáticos en producción (Render)
+# WhiteNoise configuración correcta para producción
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+WHITENOISE_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

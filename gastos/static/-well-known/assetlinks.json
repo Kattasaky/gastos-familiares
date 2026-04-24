@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.onrender.gastos_familiares_wldj.twa",
+            "sha256_cert_fingerprints": [
+                "EE:DA:49:32:06:D6:51:E8:2E:B5:6F:F4:25:81:E9:A3:3B:F7:4B:A3:3A:BB:FC:B1:18:B7:B5:F0:05:0B:A8:9F"
+            ]
+        }
+    }
+]

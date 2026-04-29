@@ -36,33 +36,9 @@ def inicio(request):
 
 @login_required
 def lista_gastos(request):
-    from django.db.models import Sum
     services.actualizar_estados_vencidos()
-    hoy = timezone.now().date()
-    estado_filtro = request.GET.get('estado', '')
-
-    gastos_mes = Gasto.objects.filter(
-        usuario=request.user,
-        fecha__year=hoy.year,
-        fecha__month=hoy.month,
-    ).select_related('categoria')
-
-    # Totales reales para las tarjetas
-    total_pagado    = gastos_mes.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
-    total_pendiente = gastos_mes.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
-    total_vencido   = gastos_mes.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
-
-    # Filtro opcional por estado
-    if estado_filtro:
-        gastos_mes = gastos_mes.filter(estado=estado_filtro)
-
-    return render(request, 'gastos/lista.html', {
-        'gastos': gastos_mes,
-        'estado_filtro': estado_filtro,
-        'total_pagado': total_pagado,
-        'total_pendiente': total_pendiente,
-        'total_vencido': total_vencido,
-    })
+    gastos = Gasto.objects.filter(usuario=request.user).select_related('categoria')
+    return render(request, 'gastos/lista.html', {'gastos': gastos})
 
 
 @login_required
@@ -125,32 +101,24 @@ def eliminar_gasto(request, pk):
 
 @login_required
 def lista_compras(request):
-    frecuencia_filtro = request.GET.get('frecuencia', '')
-    categoria_id = request.GET.get('categoria')          # ← nuevo
-
-    items_qs = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
-
-    if frecuencia_filtro:
-        items_qs = items_qs.filter(frecuencia=frecuencia_filtro)
-    if categoria_id:                                     # ← nuevo
-        items_qs = items_qs.filter(categoria_id=categoria_id)
-
-    # Total solo de los pendientes (sin cambiar tu función original)
-    total_pendiente = sum(
-        (item.valor_aprox or 0) * item.cantidad
-        for item in items_qs
-        if not item.comprado
+    categoria_filtro = request.GET.get('categoria', '')
+    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
+    if categoria_filtro:
+        items = items.filter(categoria__pk=categoria_filtro)
+    # Calcular total estimado de la lista filtrada
+    total_lista = sum(
+        (item.valor_aprox * item.cantidad) for item in items if item.valor_aprox
     )
-
-    total_estimado = services.total_estimado_compras(request.user)
-
+    total_pendiente = sum(
+        (item.valor_aprox * (item.cantidad - item.cantidad_comprada))
+        for item in items if item.valor_aprox and not item.comprado
+    )
     return render(request, 'gastos/compras.html', {
-        'items': items_qs,
+        'items': items,
         'categorias': Categoria.objects.all(),
-        'frecuencia_filtro': frecuencia_filtro,
-        'total_estimado': total_estimado,
-        'categoria_activa': int(categoria_id) if categoria_id else None,  # ← nuevo
-        'total_pendiente': total_pendiente,                               # ← nuevo
+        'categoria_filtro': categoria_filtro,
+        'total_lista': total_lista,
+        'total_pendiente': total_pendiente,
     })
 
 
@@ -164,7 +132,6 @@ def agregar_compra(request):
                 cantidad=int(request.POST.get('cantidad', 1)),
                 valor_aprox=request.POST.get('valor_aprox') or None,
                 categoria_id=request.POST.get('categoria') or None,
-                frecuencia=request.POST.get('frecuencia', 'mensual'),
             )
         except ValueError as e:
             messages.error(request, str(e))
@@ -173,118 +140,30 @@ def agregar_compra(request):
 
 @login_required
 def toggle_compra(request, pk):
-    services.marcar_comprado(pk, request.user)
-    return redirect('lista_compras')
-
-
-@login_required
-def eliminar_compra(request, pk):
-    """Elimina un ítem individual de la lista."""
-    if request.method == 'POST':
-        services.eliminar_item_compra(pk, request.user)
+    """
+    Si el item tiene cantidad > 1, incrementa cantidad_comprada en 1.
+    Cuando cantidad_comprada == cantidad, se marca como completamente comprado.
+    Si ya estaba completamente comprado, reinicia a 0 (desmarcar).
+    """
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if item.comprado:
+        # Desmarcar todo
+        item.comprado = False
+        item.cantidad_comprada = 0
+    else:
+        item.cantidad_comprada = min(item.cantidad_comprada + 1, item.cantidad)
+        if item.cantidad_comprada >= item.cantidad:
+            item.comprado = True
+    item.save()
     return redirect('lista_compras')
 
 
 @login_required
 def limpiar_comprados(request):
-    """
-    Desmarca los ítems recurrentes y elimina los de única vez.
-    No borra la lista permanente.
-    """
     if request.method == 'POST':
         n = services.limpiar_comprados(request.user)
-        messages.success(request, f'Lista reiniciada. {n} ítem(s) procesados.')
+        messages.success(request, f'{n} ítem(s) eliminado(s).')
     return redirect('lista_compras')
-
-
-@login_required
-def exportar_compras_excel(request):
-    import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment
-
-    categoria_id = request.GET.get('categoria')
-    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
-    if categoria_id:
-        items = items.filter(categoria_id=categoria_id)
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Lista de Compras"
-
-    # Estilo encabezado
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill("solid", fgColor="1a1a2e")
-    center = Alignment(horizontal='center')
-
-    encabezados = ['Ítem', 'Cantidad', 'Precio unitario aprox', 'Total aprox', 'Categoría', 'Estado']
-    for col, titulo in enumerate(encabezados, 1):
-        celda = ws.cell(row=1, column=col, value=titulo)
-        celda.font = header_font
-        celda.fill = header_fill
-        celda.alignment = center
-
-    total_pendiente = 0
-    for row, item in enumerate(items, 2):
-        precio = float(item.valor_aprox or 0)
-        total_fila = precio * item.cantidad
-        estado = '✓ Comprado' if item.comprado else '○ Pendiente'
-
-        ws.cell(row=row, column=1, value=item.nombre)
-        ws.cell(row=row, column=2, value=item.cantidad)
-        ws.cell(row=row, column=3, value=precio if precio else '')
-        ws.cell(row=row, column=4, value=total_fila if precio else '')
-        ws.cell(row=row, column=5, value=str(item.categoria) if item.categoria else 'Sin categoría')
-        ws.cell(row=row, column=6, value=estado)
-
-        if not item.comprado:
-            total_pendiente += total_fila
-
-    # Fila de total al final
-    fila_total = items.count() + 2
-    ws.cell(row=fila_total, column=3, value='TOTAL PENDIENTE')
-    ws.cell(row=fila_total, column=3).font = Font(bold=True)
-    ws.cell(row=fila_total, column=4, value=total_pendiente)
-    ws.cell(row=fila_total, column=4).font = Font(bold=True)
-
-    # Ancho automático de columnas
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or '')) for cell in col)
-        ws.column_dimensions[col[0].column_letter].width = max_len + 4
-
-    from django.http import HttpResponse
-    from django.utils import timezone
-    hoy = timezone.now().date()
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = f'attachment; filename=compras_{hoy}.xlsx'
-    wb.save(response)
-    return response
-
-@login_required
-def editar_compra(request, pk):
-    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        valor = request.POST.get('valor_aprox')
-        item.valor_aprox = valor if valor else None
-        item.save()
-    return redirect('lista_compras')
-
-from .forms import ItemCompraForm
-
-@login_required
-def editar_item(request, pk):
-    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        form = ItemCompraForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Ítem actualizado correctamente.")
-            return redirect('lista_compras')
-    else:
-        form = ItemCompraForm(instance=item)
-    return render(request, 'gastos/editar_item.html', {'form': form, 'item': item})
-
 
 
 # ─────────────────────────────────────────────
@@ -333,44 +212,19 @@ def eliminar_recurrente(request, pk):
 @login_required
 def pagar_cuota_mes(request, pk):
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
-
-    # Crear el gasto del mes
+    pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
+    pago.save()
     Gasto.objects.create(
         usuario=request.user,
-        descripcion=f"{pago.descripcion}",
+        descripcion=f"{pago.descripcion} - cuota {pago.cuotas_pagadas}/{pago.total_cuotas or '∞'}",
         monto=pago.monto,
         categoria=pago.categoria,
         prioridad=pago.prioridad,
-        fecha=timezone.now().date(),
         fecha_vencimiento=timezone.now().date(),
         estado='pagado',
     )
-
-    # Siempre incrementar cuota si existe total_cuotas
-    if pago.total_cuotas:
-        pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
-
-        if pago.cuotas_pagadas >= pago.total_cuotas:
-            pago.activo = False
-            messages.success(request, f'✅ Última cuota pagada. "{pago.descripcion}" completado.')
-        else:
-            restantes = pago.total_cuotas - pago.cuotas_pagadas
-            messages.success(
-                request,
-                f'✅ Cuota {pago.cuotas_pagadas}/{pago.total_cuotas} pagada. '
-                f'Quedan {restantes} cuota(s). El pago sigue en tu lista.'
-            )
-        pago.save(update_fields=['cuotas_pagadas', 'activo'])
-    else:
-        # Caso sin cuotas definidas (mensual/semanal indefinido)
-        messages.success(
-            request,
-            f'✅ "{pago.descripcion}" registrado como pagado este {pago.frecuencia}. '
-            f'Seguirá apareciendo en la lista.'
-        )
-
+    messages.success(request, 'Cuota marcada como pagada.')
     return redirect('lista_recurrentes')
-
 
 
 @login_required
@@ -543,6 +397,8 @@ def nueva_meta(request):
 
 @login_required
 def registrar_aporte(request, pk):
+    # NOMBRE CORRECTO: la vista se llama registrar_aporte
+    # pero llama al servicio registrar_aporte_meta (con sufijo)
     if request.method == 'POST':
         try:
             services.registrar_aporte_meta(
@@ -578,29 +434,44 @@ def archivar_meta(request, pk):
 
 
 # ─────────────────────────────────────────────
-# CATEGORÍAS
+# REGISTRO DE USUARIO
 # ─────────────────────────────────────────────
 
+def registro(request):
+    # BUG CORREGIDO: antes faltaba el return render() para GET y POST inválido
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            login(request, usuario)
+            messages.success(request, f'¡Bienvenida, {usuario.username}!')
+            return redirect('inicio')
+    else:
+        form = UserCreationForm()
+    return render(request, 'gastos/registro.html', {'form': form})
+
+# ═══════════════════════════════════════════════
+# PARTE 1: REEMPLAZAR las 3 vistas de categoría
+# en gastos/views.py (al final del archivo)
+# ═══════════════════════════════════════════════
+
 CATEGORIAS_SUGERIDAS = [
-    {'nombre': 'Supermercado',    'icono': '🛒', 'color': '#16a34a'},
-    {'nombre': 'Salud',           'icono': '🏥', 'color': '#dc2626'},
-    {'nombre': 'Arriendo',        'icono': '🏠', 'color': '#7c3aed'},
-    {'nombre': 'Transporte',      'icono': '🚗', 'color': '#2563eb'},
-    {'nombre': 'Educación',       'icono': '🎓', 'color': '#0891b2'},
-    {'nombre': 'Servicios',       'icono': '💡', 'color': '#d97706'},
-    {'nombre': 'Pyme',            'icono': '💼', 'color': '#059669'},
-    {'nombre': 'Restaurantes',    'icono': '🍽️', 'color': '#ea580c'},
-    {'nombre': 'Ropa',            'icono': '👕', 'color': '#db2777'},
-    {'nombre': 'Entretenimiento', 'icono': '🎬', 'color': '#7c3aed'},
-    {'nombre': 'Mascotas',        'icono': '🐾', 'color': '#65a30d'},
-    {'nombre': 'Viajes',          'icono': '✈️', 'color': '#0284c7'},
-    {'nombre': 'Tecnología',      'icono': '📱', 'color': '#4f46e5'},
-    {'nombre': 'Farmacia',        'icono': '💊', 'color': '#be123c'},
-    {'nombre': 'Hogar',           'icono': '🔧', 'color': '#92400e'},
-    {'nombre': 'Regalos',         'icono': '🎁', 'color': '#be185d'},
-    {'nombre': 'Niños',           'icono': '👶', 'color': '#0369a1'},
-    {'nombre': 'Feria',           'icono': '🍅', 'color': '#b45309'},
-    {'nombre': 'Combustible',     'icono': '🔥', 'color': '#c2410c'},
+    {'nombre': 'Supermercado', 'icono': '🛒', 'color': '#16a34a'},
+    {'nombre': 'Salud',        'icono': '🏥', 'color': '#dc2626'},
+    {'nombre': 'Arriendo',     'icono': '🏠', 'color': '#7c3aed'},
+    {'nombre': 'Transporte',   'icono': '🚗', 'color': '#2563eb'},
+    {'nombre': 'Educación',    'icono': '🎓', 'color': '#0891b2'},
+    {'nombre': 'Servicios',    'icono': '💡', 'color': '#d97706'},
+    {'nombre': 'Pyme',         'icono': '💼', 'color': '#059669'},
+    {'nombre': 'Restaurantes', 'icono': '🍽️', 'color': '#ea580c'},
+    {'nombre': 'Ropa',         'icono': '👕', 'color': '#db2777'},
+    {'nombre': 'Entretenimiento','icono':'🎬', 'color': '#7c3aed'},
+    {'nombre': 'Mascotas',     'icono': '🐾', 'color': '#65a30d'},
+    {'nombre': 'Viajes',       'icono': '✈️', 'color': '#0284c7'},
+    {'nombre': 'Tecnología',   'icono': '📱', 'color': '#4f46e5'},
+    {'nombre': 'Farmacia',     'icono': '💊', 'color': '#be123c'},
+    {'nombre': 'Hogar',        'icono': '🔧', 'color': '#92400e'},
+    {'nombre': 'Regalos',      'icono': '🎁', 'color': '#be185d'},
 ]
 
 
@@ -628,26 +499,31 @@ def nueva_categoria(request):
 
 
 @login_required
+def editar_categoria(request, pk):
+    cat = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        icono  = request.POST.get('icono', cat.icono).strip()
+        color  = request.POST.get('color', cat.color).strip()
+        if not nombre:
+            messages.error(request, 'El nombre no puede estar vacío.')
+        else:
+            cat.nombre = nombre
+            cat.icono = icono
+            cat.color = color
+            cat.save()
+            messages.success(request, f'Categoría "{nombre}" actualizada.')
+            return redirect('lista_categorias')
+    return render(request, 'gastos/form_categoria.html', {
+        'cat': cat,
+        'sugeridas': CATEGORIAS_SUGERIDAS,
+    })
+
+
+@login_required
 def eliminar_categoria(request, pk):
     cat = get_object_or_404(Categoria, pk=pk)
     if request.method == 'POST':
         cat.delete()
         messages.success(request, 'Categoría eliminada.')
     return redirect('lista_categorias')
-
-
-# ─────────────────────────────────────────────
-# REGISTRO DE USUARIO
-# ─────────────────────────────────────────────
-
-def registro(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            usuario = form.save()
-            login(request, usuario)
-            messages.success(request, f'¡Bienvenida, {usuario.username}!')
-            return redirect('inicio')
-    else:
-        form = UserCreationForm()
-    return render(request, 'gastos/registro.html', {'form': form})

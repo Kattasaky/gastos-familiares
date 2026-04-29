@@ -16,7 +16,6 @@ urlpatterns = [
     path('compras/', views.lista_compras, name='lista_compras'),
     path('compras/agregar/', views.agregar_compra, name='agregar_compra'),
     path('compras/<int:pk>/toggle/', views.toggle_compra, name='toggle_compra'),
-    path('compras/<int:pk>/eliminar/', views.eliminar_compra, name='eliminar_compra'),
     path('compras/limpiar/', views.limpiar_comprados, name='limpiar_comprados'),
 
     # Recurrentes
@@ -45,15 +44,12 @@ urlpatterns = [
     path('metas/<int:pk>/eliminar/', views.eliminar_meta, name='eliminar_meta'),
     path('metas/<int:pk>/archivar/', views.archivar_meta, name='archivar_meta'),
 
-    # Categorías
-    path('categorias/', views.lista_categorias, name='lista_categorias'),
-    path('categorias/nueva/', views.nueva_categoria, name='nueva_categoria'),
-    path('categorias/<int:pk>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
-
     # Registro
     path('registro/', views.registro, name='registro'),
-    path('compras/exportar/', views.exportar_compras_excel, name='exportar_compras_excel'),
-    path('compras/<int:pk>/editar/', views.editar_compra, name='editar_compra'),
-    path('compras/<int:pk>/editar_item/', views.editar_item, name='editar_item'),
 
+    #categorias 
+    path('categorias/', views.lista_categorias, name='lista_categorias'),
+    path('categorias/nueva/', views.nueva_categoria, name='nueva_categoria'),
+    path('categorias/<int:pk>/editar/', views.editar_categoria, name='editar_categoria'),
+    path('categorias/<int:pk>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
 ]

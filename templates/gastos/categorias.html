@@ -7,40 +7,28 @@
     <a href="{% url 'nueva_categoria' %}" class="btn btn-dark">+ Nueva categoría</a>
 </div>
 
-<style>
-    .card-categoria {
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-        cursor: default;
-    }
-    .card-categoria:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
-    .color-dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 6px;
-        vertical-align: middle;
-    }
-</style>
-
 <div class="row g-3">
     {% for c in categorias %}
     <div class="col-6 col-md-3">
-        <div class="card h-100 text-center card-categoria">
-            <div class="card-body py-4">
-                <div style="font-size:2.5rem">{{ c.icono }}</div>
-                <strong class="d-block mt-2 mb-1" style="color:var(--text-body)">{{ c.nombre }}</strong>
-                <span class="color-dot" style="background-color:{{ c.color }}"></span>
-                <form method="post" action="{% url 'eliminar_categoria' c.pk %}" class="mt-3">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('¿Eliminar {{ c.nombre }}? Los gastos con esta categoría quedarán sin categoría.')">
-                        Eliminar
-                    </button>
-                </form>
+        <div class="card h-100 text-center">
+            <div class="card-body py-3">
+                <div style="font-size:2rem">{{ c.icono }}</div>
+                <strong class="d-block mt-1">{{ c.nombre }}</strong>
+                <div class="mt-2">
+                    <span class="badge" style="background-color:{{ c.color }}">{{ c.color }}</span>
+                </div>
+                <div class="mt-2 d-flex gap-1 justify-content-center">
+                    <a href="{% url 'editar_categoria' c.pk %}" class="btn btn-sm btn-outline-primary">
+                        Editar
+                    </a>
+                    <form method="post" action="{% url 'eliminar_categoria' c.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('¿Eliminar {{ c.nombre }}? Los gastos con esta categoría quedarán sin categoría.')">
+                            Eliminar
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -54,4 +42,9 @@
     {% endfor %}
 </div>
 
+{% if categorias %}
+<div class="mt-4">
+    <a href="{% url 'nueva_categoria' %}" class="btn btn-dark">+ Agregar otra</a>
+</div>
+{% endif %}
 {% endblock %}

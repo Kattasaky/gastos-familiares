@@ -12,20 +12,19 @@
     <div class="col-6 col-md-3">
         <div class="card h-100 text-center">
             <div class="card-body py-3">
+                {# Franja de color en la parte superior de la tarjeta #}
+                <div style="height:6px;background-color:{{ c.color }};border-radius:4px;margin-bottom:10px;"></div>
                 <div style="font-size:2rem">{{ c.icono }}</div>
                 <strong class="d-block mt-1">{{ c.nombre }}</strong>
-                <div class="mt-2">
-                    <span class="badge" style="background-color:{{ c.color }}">{{ c.color }}</span>
-                </div>
                 <div class="mt-2 d-flex gap-1 justify-content-center">
                     <a href="{% url 'editar_categoria' c.pk %}" class="btn btn-sm btn-outline-primary">
-                        Editar
+                        ✏️ Editar
                     </a>
                     <form method="post" action="{% url 'eliminar_categoria' c.pk %}">
                         {% csrf_token %}
                         <button class="btn btn-sm btn-outline-danger"
-                                onclick="return confirm('¿Eliminar {{ c.nombre }}? Los gastos con esta categoría quedarán sin categoría.')">
-                            Eliminar
+                                onclick="return confirm('¿Eliminar {{ c.nombre }}?')">
+                            🗑
                         </button>
                     </form>
                 </div>
@@ -41,10 +40,4 @@
     </div>
     {% endfor %}
 </div>
-
-{% if categorias %}
-<div class="mt-4">
-    <a href="{% url 'nueva_categoria' %}" class="btn btn-dark">+ Agregar otra</a>
-</div>
-{% endif %}
 {% endblock %}

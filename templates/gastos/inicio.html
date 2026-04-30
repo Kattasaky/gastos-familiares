@@ -1,46 +1,48 @@
-<!--Página de inicio con el resumen del mes, gastos urgentes y próximos a vencer. -->   
-<!--Extiende la plantilla base, que tiene el menú y el footer. Solo define el contenido específico de esta página, que es el resumen de gastos. -->
-
 {% extends 'gastos/base.html' %}
-
 {% block titulo %}Inicio — Gastos Familiares{% endblock %}
 
 {% block contenido %}
-<h4 class="mb-4">Resumen de {{ resumen.mes }}/{{ resumen.año }}</h4>
+<h4 class="mb-4">📊 Resumen de {{ resumen.mes }}/{{ resumen.año }}</h4>
 
-<div class="row mb-4">
+<div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card text-white bg-dark">
+        <div class="card h-100" style="border-left: 4px solid #6c757d;">
             <div class="card-body">
-                <h6>Total del mes</h6>
-                <h3>${{ resumen.total|floatformat:0 }}</h3>
+                <small class="text-muted d-block">Total registrado este mes</small>
+                <h3 class="mb-0">${{ resumen.total|floatformat:0 }}</h3>
+                <small class="text-muted">{{ resumen.cantidad_gastos }} gasto(s)</small>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-danger">
+        <div class="card h-100" style="border-left: 4px solid #dc3545;">
             <div class="card-body">
-                <h6>Gastos urgentes</h6>
-                <h3>{{ urgentes.count }}</h3>
+                <small class="text-muted d-block">Gastos urgentes / vencidos</small>
+                <h3 class="mb-0 text-danger">{{ urgentes.count }}</h3>
+                <small class="text-muted">requieren atención</small>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-warning">
+        <div class="card h-100" style="border-left: 4px solid #ffc107;">
             <div class="card-body">
-                <h6>Vencen dentro de 7 días</h6>
-                <h3>{{ proximos.count }}</h3>
+                <small class="text-muted d-block">Vencen en 7 días</small>
+                <h3 class="mb-0 text-warning">{{ proximos.count }}</h3>
+                <small class="text-muted">pendientes próximos</small>
             </div>
         </div>
     </div>
 </div>
 
 {% if urgentes %}
-<h5>Urgentes</h5>
+<h5 class="mb-3">🔴 Urgentes / Vencidos</h5>
 <ul class="list-group mb-4">
     {% for g in urgentes %}
-    <li class="list-group-item d-flex justify-content-between">
-        {{ g.descripcion }}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <strong>{{ g.descripcion }}</strong>
+            <small class="text-muted d-block">{{ g.get_prioridad_display }} · {{ g.get_estado_display }}</small>
+        </div>
         <span class="badge bg-danger">${{ g.monto|floatformat:0 }}</span>
     </li>
     {% endfor %}
@@ -48,14 +50,33 @@
 {% endif %}
 
 {% if proximos %}
-<h5>Próximos a vencer dentro de 7 días</h5>
-<ul class="list-group">
+<h5 class="mb-3">⏳ Próximos a vencer (7 días)</h5>
+<ul class="list-group mb-4">
     {% for g in proximos %}
-    <li class="list-group-item d-flex justify-content-between">
-        {{ g.descripcion }}
-        <span class="badge bg-warning text-dark">{{ g.fecha_vencimiento }}</span>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <strong>{{ g.descripcion }}</strong>
+            <small class="text-muted d-block">Vence: {{ g.fecha_vencimiento }}</small>
+        </div>
+        <span class="badge" style="background:#ffc107;color:#212529;">${{ g.monto|floatformat:0 }}</span>
     </li>
     {% endfor %}
 </ul>
 {% endif %}
+
+{% if resumen.por_categoria %}
+<h5 class="mb-3">📂 Por categoría este mes</h5>
+<ul class="list-group">
+    {% for cat in resumen.por_categoria %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ cat.categoria__icono|default:"💰" }} {{ cat.categoria__nombre|default:"Sin categoría" }}</span>
+        <span>
+            <span class="badge bg-secondary me-2">{{ cat.cantidad }} gasto(s)</span>
+            <strong>${{ cat.subtotal|floatformat:0 }}</strong>
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
 {% endblock %}

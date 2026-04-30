@@ -36,9 +36,24 @@ def inicio(request):
 
 @login_required
 def lista_gastos(request):
+    from django.db.models import Sum
     services.actualizar_estados_vencidos()
+    estado_filtro = request.GET.get('estado', '')
     gastos = Gasto.objects.filter(usuario=request.user).select_related('categoria')
-    return render(request, 'gastos/lista.html', {'gastos': gastos})
+    if estado_filtro:
+        gastos = gastos.filter(estado=estado_filtro)
+    # Totales siempre sobre TODOS los gastos del usuario (sin el filtro de estado)
+    todos = Gasto.objects.filter(usuario=request.user)
+    total_pagado   = todos.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
+    total_pendiente= todos.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
+    total_vencido  = todos.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
+    return render(request, 'gastos/lista.html', {
+        'gastos': gastos,
+        'estado_filtro': estado_filtro,
+        'total_pagado': total_pagado,
+        'total_pendiente': total_pendiente,
+        'total_vencido': total_vencido,
+    })
 
 
 @login_required

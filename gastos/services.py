@@ -94,7 +94,7 @@ def gastos_urgentes(usuario):
 # ─────────────────────────────────────────────
 
 def agregar_item_compra(usuario, nombre, cantidad=1, valor_aprox=None,
-                        categoria_id=None, frecuencia='mensual'):
+                        categoria_id=None):
     if not nombre or not nombre.strip():
         raise ValueError("El nombre no puede estar vacío.")
     return ItemCompra.objects.create(
@@ -103,7 +103,6 @@ def agregar_item_compra(usuario, nombre, cantidad=1, valor_aprox=None,
         cantidad=cantidad,
         valor_aprox=valor_aprox,
         categoria_id=categoria_id,
-        frecuencia=frecuencia,
     )
 
 
@@ -116,24 +115,14 @@ def marcar_comprado(item_id, usuario):
 
 def limpiar_comprados(usuario):
     """
-    CORREGIDO: Ahora solo DESMARCA los ítems comprados en vez de eliminarlos.
-    Así la lista permanente se mantiene para el siguiente período.
-    Los ítems de frecuencia 'unica' sí se eliminan porque son de un solo uso.
+    Desmarca todos los ítems comprados (reinicia cantidad_comprada a 0).
+    La lista permanente se mantiene para el siguiente período.
     """
-    # Eliminar solo los de única vez
-    eliminados, _ = ItemCompra.objects.filter(
-        usuario=usuario,
-        comprado=True,
-        frecuencia='unica'
-    ).delete()
-
-    # Desmarcar el resto (semanal, quincenal, mensual)
     desmarcados = ItemCompra.objects.filter(
         usuario=usuario,
         comprado=True
-    ).update(comprado=False)
-
-    return eliminados + desmarcados
+    ).update(comprado=False, cantidad_comprada=0)
+    return desmarcados
 
 
 def eliminar_item_compra(item_id, usuario):

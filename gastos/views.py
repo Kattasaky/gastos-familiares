@@ -205,6 +205,7 @@ def nuevo_recurrente(request):
                 total_cuotas=request.POST.get('total_cuotas') or None,
                 prioridad=request.POST.get('prioridad', 'normal'),
                 dia_semana=request.POST.get('dia_semana') or None,
+                cuotas_pagadas=request.POST.get('cuotas_pagadas') or 0,
             )
             messages.success(request, 'Pago recurrente creado.')
             return redirect('lista_recurrentes')
@@ -213,7 +214,6 @@ def nuevo_recurrente(request):
     return render(request, 'gastos/form_recurrente.html', {
         'categorias': Categoria.objects.all()
     })
-
 
 @login_required
 def eliminar_recurrente(request, pk):
@@ -542,3 +542,32 @@ def eliminar_categoria(request, pk):
         cat.delete()
         messages.success(request, 'Categoría eliminada.')
     return redirect('lista_categorias')
+
+@login_required
+def exportar_compras_excel(request):
+    import openpyxl
+    from django.http import HttpResponse
+    categoria_filtro = request.GET.get('categoria', '')
+    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
+    if categoria_filtro:
+        items = items.filter(categoria__pk=categoria_filtro)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Lista de Compras"
+    ws.append(['Ítem', 'Cantidad', 'Comprado', 'Precio Unit.', 'Total', 'Categoría'])
+    for item in items:
+        ws.append([
+            item.nombre,
+            item.cantidad,
+            'Sí' if item.comprado else 'No',
+            float(item.valor_aprox) if item.valor_aprox else '',
+            float(item.total) if item.total else '',
+            str(item.categoria) if item.categoria else '',
+        ])
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="lista_compras.xlsx"'
+    wb.save(response)
+    return response
+

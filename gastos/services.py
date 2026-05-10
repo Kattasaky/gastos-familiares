@@ -153,7 +153,7 @@ def total_estimado_compras(usuario):
 def crear_pago_recurrente(usuario, descripcion, dia_pago=None, monto=None,
                            categoria_id=None, frecuencia='mensual',
                            total_cuotas=None, prioridad='normal',
-                           dia_semana=None):
+                           dia_semana=None, cuotas_pagadas=0):
     if not descripcion or not descripcion.strip():
         raise ValueError("La descripción no puede estar vacía.")
     if frecuencia in ('mensual', 'cuotas'):
@@ -161,6 +161,9 @@ def crear_pago_recurrente(usuario, descripcion, dia_pago=None, monto=None,
             raise ValueError("Debes indicar el día del mes.")
         if not 1 <= int(dia_pago) <= 31:
             raise ValueError("El día debe estar entre 1 y 31.")
+    cuotas_pagadas = int(cuotas_pagadas) if cuotas_pagadas else 0
+    if total_cuotas and cuotas_pagadas > int(total_cuotas):
+        raise ValueError("Las cuotas ya pagadas no pueden superar el total.")
     return PagoRecurrente.objects.create(
         usuario=usuario,
         descripcion=descripcion.strip(),
@@ -169,10 +172,10 @@ def crear_pago_recurrente(usuario, descripcion, dia_pago=None, monto=None,
         frecuencia=frecuencia,
         dia_pago=int(dia_pago) if dia_pago else None,
         dia_semana=int(dia_semana) if dia_semana else None,
-        total_cuotas=total_cuotas or None,
+        total_cuotas=int(total_cuotas) if total_cuotas else None,
+        cuotas_pagadas=cuotas_pagadas,
         prioridad=prioridad,
     )
-
 
 def generar_gastos_del_mes(usuario):
     """

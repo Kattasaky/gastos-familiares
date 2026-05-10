@@ -570,4 +570,3 @@ def exportar_compras_excel(request):
     response['Content-Disposition'] = 'attachment; filename="lista_compras.xlsx"'
     wb.save(response)
     return response
-

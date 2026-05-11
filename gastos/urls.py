@@ -18,6 +18,7 @@ urlpatterns = [
     path('compras/<int:pk>/toggle/', views.toggle_compra, name='toggle_compra'),
     path('compras/limpiar/', views.limpiar_comprados, name='limpiar_comprados'),
     path('compras/exportar/', views.exportar_compras_excel, name='exportar_compras_excel'),  # Nueva ruta para exportar a Excel
+    path('compras/<int:pk>/editar/', views.editar_compra, name='editar_compra'),
 
     # Recurrentes
     path('recurrentes/', views.lista_recurrentes, name='lista_recurrentes'),

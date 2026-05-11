@@ -1,0 +1,39 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Editar Ítem{% endblock %}
+{% block contenido %}
+<h4 class="mb-4">✏️ Editar ítem</h4>
+<div class="col-md-6">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="nombre" class="form-control"
+                   value="{{ item.nombre }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Cantidad</label>
+            <input type="number" name="cantidad" class="form-control"
+                   value="{{ item.cantidad }}" min="1">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Precio unitario</label>
+            <input type="number" name="valor_aprox" class="form-control"
+                   value="{{ item.valor_aprox|default:'' }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Categoría</label>
+            <select name="categoria" class="form-select">
+                <option value="">Sin categoría</option>
+                {% for c in categorias %}
+                <option value="{{ c.pk }}"
+                    {% if item.categoria and item.categoria.pk == c.pk %}selected{% endif %}>
+                    {{ c }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-dark">Guardar</button>
+        <a href="{% url 'lista_compras' %}" class="btn btn-outline-dark">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

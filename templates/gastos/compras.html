@@ -103,28 +103,30 @@
             </form>
 
             {# Nombre y detalle #}
-            <div class="flex-grow-1">
-                <span {% if item.comprado %}style="text-decoration:line-through; color:#aaa;"{% endif %}>
-                    <strong>{{ item.nombre }}</strong>
-                </span>
-                <div class="small text-muted">
-                    {% if item.categoria %}
-                    <span class="badge" style="background-color:{{ item.categoria.color }}">
-                        {{ item.categoria.icono }} {{ item.categoria.nombre }}
-                    </span>
-                    {% endif %}
-                    {% if item.cantidad > 1 %}&nbsp;· Cantidad: {{ item.cantidad }}{% endif %}
-                    {% if item.valor_aprox %}
-                    &nbsp;· ${{ item.valor_aprox|floatformat:0 }} c/u
-                    {% if item.cantidad > 1 %} → <strong>${{ item.total|floatformat:0 }} total</strong>{% endif %}
-                    {% endif %}
-                    {% if not item.comprado and item.cantidad > 1 and item.cantidad_comprada > 0 %}
-                    <span class="text-success">&nbsp;· {{ item.cantidad_comprada }} comprado(s)</span>
-                    {% endif %}
-                </div>
-            </div>
+<div class="flex-grow-1">
+    <span {% if item.comprado %}style="text-decoration:line-through; color:#aaa;"{% endif %}>
+        <strong>{{ item.nombre }}</strong>
+    </span>
+    <div class="small text-muted">
+        {% if item.categoria %}
+        <span class="badge" style="background-color:{{ item.categoria.color }}">
+            {{ item.categoria.icono }} {{ item.categoria.nombre }}
+        </span>
+        {% endif %}
+        {% if item.cantidad > 1 %}&nbsp;· Cantidad: {{ item.cantidad }}{% endif %}
+        {% if item.valor_aprox %}
+        &nbsp;· ${{ item.valor_aprox|floatformat:0 }} c/u
+        {% if item.cantidad > 1 %} → <strong>${{ item.total|floatformat:0 }} total</strong>{% endif %}
+        {% endif %}
+        {% if not item.comprado and item.cantidad > 1 and item.cantidad_comprada > 0 %}
+        <span class="text-success">&nbsp;· {{ item.cantidad_comprada }} comprado(s)</span>
+        {% endif %}
+    </div>
+</div>
 
-        </div>
+{# ← NUEVO: botón editar #}
+<a href="{% url 'editar_compra' item.pk %}" class="btn btn-outline-secondary btn-sm">✏️</a>
+            
     </li>
     {% empty %}
     <li class="list-group-item text-center py-5">

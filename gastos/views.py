@@ -155,23 +155,26 @@ def agregar_compra(request):
 
 @login_required
 def toggle_compra(request, pk):
-    """
-    Si el item tiene cantidad > 1, incrementa cantidad_comprada en 1.
-    Cuando cantidad_comprada == cantidad, se marca como completamente comprado.
-    Si ya estaba completamente comprado, reinicia a 0 (desmarcar).
-    """
     item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
     if item.comprado:
-        # Desmarcar todo
         item.comprado = False
         item.cantidad_comprada = 0
     else:
         item.cantidad_comprada = min(item.cantidad_comprada + 1, item.cantidad)
         if item.cantidad_comprada >= item.cantidad:
             item.comprado = True
+            # ← NUEVO: crear gasto al completar la compra
+            Gasto.objects.create(
+                usuario=request.user,
+                descripcion=f"🛒 {item.nombre}",
+                monto=item.total or item.valor_aprox or 0,
+                categoria=item.categoria,
+                fecha=timezone.now().date(),
+                estado='pagado',
+                prioridad='normal',
+            )
     item.save()
     return redirect('lista_compras')
-
 
 @login_required
 def limpiar_comprados(request):
@@ -570,3 +573,19 @@ def exportar_compras_excel(request):
     response['Content-Disposition'] = 'attachment; filename="lista_compras.xlsx"'
     wb.save(response)
     return response
+
+@login_required
+def editar_compra(request, pk):
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        item.nombre = request.POST.get('nombre', item.nombre)
+        item.cantidad = int(request.POST.get('cantidad', item.cantidad))
+        item.valor_aprox = request.POST.get('valor_aprox') or None
+        item.categoria_id = request.POST.get('categoria') or None
+        item.save()
+        messages.success(request, 'Ítem actualizado.')
+        return redirect('lista_compras')
+    return render(request, 'gastos/editar_compra.html', {
+        'item': item,
+        'categorias': Categoria.objects.all(),
+    })

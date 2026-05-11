@@ -38,22 +38,46 @@ def inicio(request):
 def lista_gastos(request):
     from django.db.models import Sum
     services.actualizar_estados_vencidos()
+    hoy = timezone.now().date()
+    año = int(request.GET.get('año', hoy.year))
+    mes = int(request.GET.get('mes', hoy.month))
     estado_filtro = request.GET.get('estado', '')
-    gastos = Gasto.objects.filter(usuario=request.user).select_related('categoria')
+    gastos = Gasto.objects.filter(
+        usuario=request.user,
+        fecha__year=año,
+        fecha__month=mes,
+    ).select_related('categoria')
     if estado_filtro:
         gastos = gastos.filter(estado=estado_filtro)
-    # Totales siempre sobre TODOS los gastos del usuario (sin el filtro de estado)
-    todos = Gasto.objects.filter(usuario=request.user)
-    total_pagado   = todos.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
-    total_pendiente= todos.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
-    total_vencido  = todos.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
+    todos = Gasto.objects.filter(usuario=request.user, fecha__year=año, fecha__month=mes)
+    total_pagado    = todos.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
+    total_pendiente = todos.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
+    total_vencido   = todos.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
+    # Calcular mes anterior y siguiente para navegación
+    if mes == 1:
+        mes_anterior = {'mes': 12, 'año': año - 1}
+    else:
+        mes_anterior = {'mes': mes - 1, 'año': año}
+    if mes == 12:
+        mes_siguiente = {'mes': 1, 'año': año + 1}
+    else:
+        mes_siguiente = {'mes': mes + 1, 'año': año}
+    import calendar
+    nombre_mes = calendar.month_name[mes].capitalize()
     return render(request, 'gastos/lista.html', {
         'gastos': gastos,
         'estado_filtro': estado_filtro,
         'total_pagado': total_pagado,
         'total_pendiente': total_pendiente,
         'total_vencido': total_vencido,
+        'mes': mes,
+        'año': año,
+        'nombre_mes': nombre_mes,
+        'mes_anterior': mes_anterior,
+        'mes_siguiente': mes_siguiente,
+        'es_mes_actual': mes == hoy.month and año == hoy.year,
     })
+
 
 
 @login_required
@@ -191,9 +215,21 @@ def limpiar_comprados(request):
 
 @login_required
 def lista_recurrentes(request):
+    from django.db.models import Sum
     pagos = PagoRecurrente.objects.filter(usuario=request.user)
-    return render(request, 'gastos/recurrentes.html', {'pagos': pagos})
-
+    total_mensual = pagos.filter(
+        activo=True,
+        frecuencia__in=['mensual', 'cuotas']
+    ).aggregate(t=Sum('monto'))['t'] or 0
+    total_semanal = pagos.filter(
+        activo=True,
+        frecuencia='semanal'
+    ).aggregate(t=Sum('monto'))['t'] or 0
+    return render(request, 'gastos/recurrentes.html', {
+        'pagos': pagos,
+        'total_mensual': total_mensual,
+        'total_semanal': total_semanal,
+    })
 
 @login_required
 def nuevo_recurrente(request):

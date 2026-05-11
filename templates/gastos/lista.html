@@ -3,10 +3,20 @@
 
 {% block contenido %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4>Mis Gastos del mes</h4>
+    <h4>💸 Gastos — {{ nombre_mes }} {{ año }}</h4>
     <a href="{% url 'nuevo_gasto' %}" class="btn btn-dark">+ Nuevo gasto</a>
 </div>
 
+<!-- Navegación por mes -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="?mes={{ mes_anterior.mes }}&año={{ mes_anterior.año }}"
+       class="btn btn-outline-dark btn-sm">← Mes anterior</a>
+    {% if not es_mes_actual %}
+    <a href="{% url 'lista_gastos' %}" class="btn btn-dark btn-sm">Hoy</a>
+    {% endif %}
+    <a href="?mes={{ mes_siguiente.mes }}&año={{ mes_siguiente.año }}"
+       class="btn btn-outline-dark btn-sm">Mes siguiente →</a>
+</div>
 <!-- Resumen rápido -->
 <div class="row g-2 mb-4">
     <div class="col-6 col-md-3">

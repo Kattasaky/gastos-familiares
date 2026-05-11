@@ -1,9 +1,28 @@
 {% extends 'gastos/base.html' %}
 {% block titulo %}Pagos Recurrentes{% endblock %}
 {% block contenido %}
+
 <div class="d-flex justify-content-between mb-4">
     <h4>Pagos Recurrentes</h4>
     <a href="{% url 'nuevo_recurrente' %}" class="btn btn-dark">+ Nuevo</a>
+</div>
+
+<!-- Resumen total mensual -->
+<div class="row g-2 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3">
+            <div class="small text-muted">💰 Gastos fijos al mes</div>
+            <strong class="fs-5">${{ total_mensual|floatformat:0 }}</strong>
+        </div>
+    </div>
+    {% if total_semanal %}
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3">
+            <div class="small text-muted">📅 Total semanales</div>
+            <strong class="fs-5">${{ total_semanal|floatformat:0 }}</strong>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <div class="table-responsive">
@@ -22,13 +41,8 @@
     <tbody>
         {% for p in pagos %}
         <tr>
-            <!-- Descripción -->
             <td>{{ p.descripcion }}</td>
-
-            <!-- Monto -->
             <td>{{ p.monto }}</td>
-
-            <!-- Día pago -->
             <td>
                 {% if p.frecuencia == 'semanal' %}
                   {% if p.dia_semana == 0 %}Lunes
@@ -43,11 +57,7 @@
                   Día {{ p.dia_pago }}
                 {% endif %}
             </td>
-
-            <!-- Frecuencia -->
             <td>{{ p.frecuencia|title }}</td>
-
-            <!-- Cuotas -->
             <td>
                 {% if p.total_cuotas %}
                     {{ p.cuotas_pagadas }}/{{ p.total_cuotas }}
@@ -55,11 +65,7 @@
                     Indefinido
                 {% endif %}
             </td>
-
-            <!-- Prioridad -->
             <td>{{ p.get_prioridad_display }}</td>
-
-            <!-- Acciones -->
             <td>
                 <div class="btn-group">
                     <form method="post" action="{% url 'pagar_cuota_mes' p.pk %}">
@@ -74,7 +80,6 @@
                         {% csrf_token %}
                         <button class="btn btn-sm btn-danger">Eliminar</button>
                     </form>
-                    <!-- Botón Editar -->
                     <a href="{% url 'editar_recurrente' p.pk %}" class="btn btn-sm btn-primary">Editar</a>
                 </div>
             </td>

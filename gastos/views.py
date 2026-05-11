@@ -161,18 +161,19 @@ def toggle_compra(request, pk):
         item.cantidad_comprada = 0
     else:
         item.cantidad_comprada = min(item.cantidad_comprada + 1, item.cantidad)
-        if item.cantidad_comprada >= item.cantidad:
-            item.comprado = True
-            # ← NUEVO: crear gasto al completar la compra
+        # Crea gasto por CADA unidad marcada (no solo al completar)
+        if item.valor_aprox:
             Gasto.objects.create(
                 usuario=request.user,
-                descripcion=f"🛒 {item.nombre}",
-                monto=item.total or item.valor_aprox or 0,
+                descripcion=f"🛒 {item.nombre} (1 unidad)",
+                monto=item.valor_aprox,
                 categoria=item.categoria,
                 fecha=timezone.now().date(),
                 estado='pagado',
                 prioridad='normal',
             )
+        if item.cantidad_comprada >= item.cantidad:
+            item.comprado = True
     item.save()
     return redirect('lista_compras')
 

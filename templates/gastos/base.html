@@ -128,6 +128,24 @@
         [data-theme="dark"] .btn-close {
             filter: invert(1);
         }
+        [data-theme="dark"] .card strong,
+        [data-theme="dark"] .card-body strong {
+            color: var(--text-body) !important;
+        }
+        /* ── Fix dark mode checkboxes y textos lista compras ── */
+        [data-theme="dark"] .list-group-item span,
+        [data-theme="dark"] .list-group-item strong,
+        [data-theme="dark"] .list-group-item .flex-grow-1 {
+            color: var(--text-body) !important;
+        }
+        [data-theme="dark"] .btn-outline-primary {
+            color: #818cf8 !important;
+            border-color: #818cf8 !important;
+        }
+        [data-theme="dark"] .btn-outline-secondary {
+            color: #ccc !important;
+            border-color: #ccc !important;
+        }
         .table-responsive { overflow-x: auto; }
         @media (max-width: 768px) {
             .navbar { flex-wrap: wrap; gap: 8px; }
@@ -161,20 +179,6 @@
             cursor: pointer;
             font-size: 14px;
         }
-
-
-    [data-theme="dark"] .card strong,
-[data-theme="dark"] .card-body strong {
-    color: var(--text-body) !important;
-}
-[data-theme="dark"] .btn-outline-primary {
-    color: #818cf8;
-    border-color: #818cf8;
-}
-[data-theme="dark"] .btn-outline-secondary {
-    color: #9e9e9e;
-    border-color: #9e9e9e;
-}
     </style>
 </head>
 <body>
@@ -252,7 +256,6 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        // Mostrar banner solo si no lo cerró antes
         if (!localStorage.getItem('pwa-rechazado')) {
             banner.style.display = 'block';
         }

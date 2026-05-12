@@ -216,21 +216,23 @@ def limpiar_comprados(request):
 @login_required
 def lista_recurrentes(request):
     from django.db.models import Sum
+    from decimal import Decimal
     pagos = PagoRecurrente.objects.filter(usuario=request.user)
     total_mensual = pagos.filter(
         activo=True,
         frecuencia__in=['mensual', 'cuotas']
-    ).aggregate(t=Sum('monto'))['t'] or 0
+    ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
     total_semanal = pagos.filter(
         activo=True,
         frecuencia='semanal'
-    ).aggregate(t=Sum('monto'))['t'] or 0
+    ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    total_estimado = total_mensual + (total_semanal * Decimal('4.33'))
     return render(request, 'gastos/recurrentes.html', {
         'pagos': pagos,
         'total_mensual': total_mensual,
         'total_semanal': total_semanal,
+        'total_estimado': total_estimado,
     })
-
 @login_required
 def nuevo_recurrente(request):
     if request.method == 'POST':

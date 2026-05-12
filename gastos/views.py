@@ -226,7 +226,7 @@ def lista_recurrentes(request):
         activo=True,
         frecuencia='semanal'
     ).aggregate(t=Sum('monto'))['t'] or Decimal('0')
-    total_estimado = total_mensual + (total_semanal * Decimal('4.33'))
+    total_estimado = total_mensual + (total_semanal * Decimal('4'))
     return render(request, 'gastos/recurrentes.html', {
         'pagos': pagos,
         'total_mensual': total_mensual,

@@ -31,14 +31,24 @@
     <div class="col-md-2">
         <input type="number" name="valor_aprox" class="form-control" placeholder="Precio unit.">
     </div>
-    <div class="col-md-3">
-        <select name="categoria" class="form-select">
-            <option value="">Sin categoría</option>
-            {% for c in categorias %}
-            <option value="{{ c.pk }}">{{ c }}</option>
-            {% endfor %}
-        </select>
+    <div class="col-md-3" style="position:relative">
+    <input type="text" id="buscarCat" class="form-control"
+           placeholder="🏷️ Categoría..." autocomplete="off">
+    <input type="hidden" name="categoria" id="categoriaSeleccionada">
+    <div id="listaCats" style="position:absolute;z-index:1000;background:var(--bg-card);
+         border:1px solid var(--border-color);border-radius:6px;width:100%;
+         display:none;max-height:200px;overflow-y:auto;">
+        <div class="cat-opcion" data-valor="" style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+            Sin categoría
+        </div>
+        {% for c in categorias %}
+        <div class="cat-opcion" data-valor="{{ c.pk }}"
+             style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+            {{ c.icono }} {{ c.nombre }}
+        </div>
+        {% endfor %}
     </div>
+</div>
     <div class="col-md-1">
         <button class="btn btn-dark w-100">+</button>
     </div>
@@ -177,6 +187,38 @@ input.addEventListener('input', function() {
 document.addEventListener('click', (e) => {
     if (!input.contains(e.target)) caja.style.display = 'none';
 });
+// ── Buscador de categorías ──
+const buscarCat = document.getElementById('buscarCat');
+const listaCats = document.getElementById('listaCats');
+const catHidden = document.getElementById('categoriaSeleccionada');
+const opciones = document.querySelectorAll('.cat-opcion');
+
+buscarCat.addEventListener('focus', () => listaCats.style.display = 'block');
+
+buscarCat.addEventListener('input', function() {
+    const texto = this.value.toLowerCase();
+    opciones.forEach(op => {
+        op.style.display = op.textContent.toLowerCase().includes(texto) ? 'block' : 'none';
+    });
+    listaCats.style.display = 'block';
+});
+
+opciones.forEach(op => {
+    op.addEventListener('mouseenter', () => op.style.background = 'var(--table-hover)');
+    op.addEventListener('mouseleave', () => op.style.background = '');
+    op.addEventListener('click', () => {
+        catHidden.value = op.dataset.valor;
+        buscarCat.value = op.textContent.trim();
+        listaCats.style.display = 'none';
+    });
+});
+
+document.addEventListener('click', (e) => {
+    if (!buscarCat.contains(e.target) && !listaCats.contains(e.target)) {
+        listaCats.style.display = 'none';
+    }
+});
+
 </script>
 
 {% endblock %}

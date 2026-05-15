@@ -18,8 +18,12 @@
 {# ─── Formulario agregar ítem ─── #}
 <form method="post" action="{% url 'agregar_compra' %}" class="row g-2 mb-4">
     {% csrf_token %}
-    <div class="col-md-4">
-        <input type="text" name="nombre" class="form-control" placeholder="Ítem (ej: Papel higiénico)" required>
+    <div class="col-md-4" style="position:relative">
+        <input type="text" name="nombre" id="inputNombre" class="form-control"
+               placeholder="Ítem (ej: Papel higiénico)" required autocomplete="off">
+        <div id="sugerencias" style="position:absolute;z-index:999;background:var(--bg-card);
+             border:1px solid var(--border-color);border-radius:6px;width:100%;display:none;
+             max-height:200px;overflow-y:auto;"></div>
     </div>
     <div class="col-md-2">
         <input type="number" name="cantidad" class="form-control" value="1" min="1" placeholder="Cantidad">
@@ -103,30 +107,31 @@
             </form>
 
             {# Nombre y detalle #}
-<div class="flex-grow-1">
-    <span {% if item.comprado %}style="text-decoration:line-through; color:#aaa;"{% endif %}>
-        <strong>{{ item.nombre }}</strong>
-    </span>
-    <div class="small text-muted">
-        {% if item.categoria %}
-        <span class="badge" style="background-color:{{ item.categoria.color }}">
-            {{ item.categoria.icono }} {{ item.categoria.nombre }}
-        </span>
-        {% endif %}
-        {% if item.cantidad > 1 %}&nbsp;· Cantidad: {{ item.cantidad }}{% endif %}
-        {% if item.valor_aprox %}
-        &nbsp;· ${{ item.valor_aprox|floatformat:0 }} c/u
-        {% if item.cantidad > 1 %} → <strong>${{ item.total|floatformat:0 }} total</strong>{% endif %}
-        {% endif %}
-        {% if not item.comprado and item.cantidad > 1 and item.cantidad_comprada > 0 %}
-        <span class="text-success">&nbsp;· {{ item.cantidad_comprada }} comprado(s)</span>
-        {% endif %}
-    </div>
-</div>
+            <div class="flex-grow-1">
+                <span {% if item.comprado %}style="text-decoration:line-through; color:#aaa;"{% endif %}>
+                    <strong>{{ item.nombre }}</strong>
+                </span>
+                <div class="small text-muted">
+                    {% if item.categoria %}
+                    <span class="badge" style="background-color:{{ item.categoria.color }}">
+                        {{ item.categoria.icono }} {{ item.categoria.nombre }}
+                    </span>
+                    {% endif %}
+                    {% if item.cantidad > 1 %}&nbsp;· Cantidad: {{ item.cantidad }}{% endif %}
+                    {% if item.valor_aprox %}
+                    &nbsp;· ${{ item.valor_aprox|floatformat:0 }} c/u
+                    {% if item.cantidad > 1 %} → <strong>${{ item.total|floatformat:0 }} total</strong>{% endif %}
+                    {% endif %}
+                    {% if not item.comprado and item.cantidad > 1 and item.cantidad_comprada > 0 %}
+                    <span class="text-success">&nbsp;· {{ item.cantidad_comprada }} comprado(s)</span>
+                    {% endif %}
+                </div>
+            </div>
 
-{# ← NUEVO: botón editar #}
-<a href="{% url 'editar_compra' item.pk %}" class="btn btn-outline-secondary btn-sm">✏️</a>
-            
+            {# Botón editar #}
+            <a href="{% url 'editar_compra' item.pk %}" class="btn btn-outline-secondary btn-sm">✏️</a>
+
+        </div>
     </li>
     {% empty %}
     <li class="list-group-item text-center py-5">
@@ -135,4 +140,43 @@
     </li>
     {% endfor %}
 </ul>
+
+<script>
+const itemsExistentes = [
+    {% for item in items %}
+    "{{ item.nombre }}",
+    {% endfor %}
+];
+
+const input = document.getElementById('inputNombre');
+const caja = document.getElementById('sugerencias');
+
+input.addEventListener('input', function() {
+    const texto = this.value.toLowerCase().trim();
+    caja.innerHTML = '';
+    if (texto.length < 2) { caja.style.display = 'none'; return; }
+
+    const coincidencias = itemsExistentes.filter(n => n.toLowerCase().includes(texto));
+    if (coincidencias.length === 0) { caja.style.display = 'none'; return; }
+
+    coincidencias.forEach(nombre => {
+        const div = document.createElement('div');
+        div.textContent = nombre;
+        div.style.cssText = 'padding:8px 12px;cursor:pointer;color:var(--text-body);';
+        div.addEventListener('mouseenter', () => div.style.background = 'var(--table-hover)');
+        div.addEventListener('mouseleave', () => div.style.background = '');
+        div.addEventListener('click', () => {
+            input.value = nombre;
+            caja.style.display = 'none';
+        });
+        caja.appendChild(div);
+    });
+    caja.style.display = 'block';
+});
+
+document.addEventListener('click', (e) => {
+    if (!input.contains(e.target)) caja.style.display = 'none';
+});
+</script>
+
 {% endblock %}

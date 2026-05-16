@@ -53,7 +53,6 @@ def lista_gastos(request):
     total_pagado    = todos.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
     total_pendiente = todos.filter(estado='pendiente').aggregate(t=Sum('monto'))['t'] or 0
     total_vencido   = todos.filter(estado='vencido').aggregate(t=Sum('monto'))['t'] or 0
-    # Calcular mes anterior y siguiente para navegación
     if mes == 1:
         mes_anterior = {'mes': 12, 'año': año - 1}
     else:
@@ -77,7 +76,6 @@ def lista_gastos(request):
         'mes_siguiente': mes_siguiente,
         'es_mes_actual': mes == hoy.month and año == hoy.year,
     })
-
 
 
 @login_required
@@ -140,11 +138,16 @@ def eliminar_gasto(request, pk):
 
 @login_required
 def lista_compras(request):
+    from .models import LocalCompra
     categoria_filtro = request.GET.get('categoria', '')
-    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
+    local_filtro = request.GET.get('local', '')
+    items = ItemCompra.objects.filter(
+        usuario=request.user
+    ).select_related('categoria', 'local_compra')
     if categoria_filtro:
         items = items.filter(categoria__pk=categoria_filtro)
-    # Calcular total estimado de la lista filtrada
+    if local_filtro:
+        items = items.filter(local_compra__pk=local_filtro)
     total_lista = sum(
         (item.valor_aprox * item.cantidad) for item in items if item.valor_aprox
     )
@@ -155,7 +158,9 @@ def lista_compras(request):
     return render(request, 'gastos/compras.html', {
         'items': items,
         'categorias': Categoria.objects.all(),
+        'locales': LocalCompra.objects.all(),
         'categoria_filtro': categoria_filtro,
+        'local_filtro': local_filtro,
         'total_lista': total_lista,
         'total_pendiente': total_pendiente,
     })
@@ -171,6 +176,7 @@ def agregar_compra(request):
                 cantidad=int(request.POST.get('cantidad', 1)),
                 valor_aprox=request.POST.get('valor_aprox') or None,
                 categoria_id=request.POST.get('categoria') or None,
+                local_id=request.POST.get('local') or None,
             )
         except ValueError as e:
             messages.error(request, str(e))
@@ -185,7 +191,6 @@ def toggle_compra(request, pk):
         item.cantidad_comprada = 0
     else:
         item.cantidad_comprada = min(item.cantidad_comprada + 1, item.cantidad)
-        # Crea gasto por CADA unidad marcada (no solo al completar)
         if item.valor_aprox:
             Gasto.objects.create(
                 usuario=request.user,
@@ -201,12 +206,78 @@ def toggle_compra(request, pk):
     item.save()
     return redirect('lista_compras')
 
+
 @login_required
 def limpiar_comprados(request):
     if request.method == 'POST':
         n = services.limpiar_comprados(request.user)
         messages.success(request, f'{n} ítem(s) eliminado(s).')
     return redirect('lista_compras')
+
+
+@login_required
+def editar_compra(request, pk):
+    from .models import LocalCompra
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        item.nombre = request.POST.get('nombre', item.nombre)
+        item.cantidad = int(request.POST.get('cantidad', item.cantidad))
+        item.valor_aprox = request.POST.get('valor_aprox') or None
+        item.categoria_id = request.POST.get('categoria') or None
+        item.local_compra_id = request.POST.get('local') or None
+        item.save()
+        messages.success(request, 'Ítem actualizado.')
+        return redirect('lista_compras')
+    return render(request, 'gastos/editar_compra.html', {
+        'item': item,
+        'categorias': Categoria.objects.all(),
+        'locales': LocalCompra.objects.all(),
+    })
+
+
+@login_required
+def eliminar_compra(request, pk):
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Ítem eliminado.')
+    return redirect('lista_compras')
+
+
+@login_required
+def exportar_compras_excel(request):
+    import openpyxl
+    from django.http import HttpResponse
+    from .models import LocalCompra
+    categoria_filtro = request.GET.get('categoria', '')
+    local_filtro = request.GET.get('local', '')
+    items = ItemCompra.objects.filter(
+        usuario=request.user
+    ).select_related('categoria', 'local_compra')
+    if categoria_filtro:
+        items = items.filter(categoria__pk=categoria_filtro)
+    if local_filtro:
+        items = items.filter(local_compra__pk=local_filtro)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Lista de Compras"
+    ws.append(['Ítem', 'Cantidad', 'Comprado', 'Precio Unit.', 'Total', 'Categoría', 'Local'])
+    for item in items:
+        ws.append([
+            item.nombre,
+            item.cantidad,
+            'Sí' if item.comprado else 'No',
+            float(item.valor_aprox) if item.valor_aprox else '',
+            float(item.total) if item.total else '',
+            str(item.categoria) if item.categoria else '',
+            str(item.local_compra) if item.local_compra else '',
+        ])
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="lista_compras.xlsx"'
+    wb.save(response)
+    return response
 
 
 # ─────────────────────────────────────────────
@@ -233,6 +304,8 @@ def lista_recurrentes(request):
         'total_semanal': total_semanal,
         'total_estimado': total_estimado,
     })
+
+
 @login_required
 def nuevo_recurrente(request):
     if request.method == 'POST':
@@ -256,6 +329,7 @@ def nuevo_recurrente(request):
     return render(request, 'gastos/form_recurrente.html', {
         'categorias': Categoria.objects.all()
     })
+
 
 @login_required
 def eliminar_recurrente(request, pk):
@@ -454,8 +528,6 @@ def nueva_meta(request):
 
 @login_required
 def registrar_aporte(request, pk):
-    # NOMBRE CORRECTO: la vista se llama registrar_aporte
-    # pero llama al servicio registrar_aporte_meta (con sufijo)
     if request.method == 'POST':
         try:
             services.registrar_aporte_meta(
@@ -495,7 +567,6 @@ def archivar_meta(request, pk):
 # ─────────────────────────────────────────────
 
 def registro(request):
-    # BUG CORREGIDO: antes faltaba el return render() para GET y POST inválido
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -507,28 +578,28 @@ def registro(request):
         form = UserCreationForm()
     return render(request, 'gastos/registro.html', {'form': form})
 
-# ═══════════════════════════════════════════════
-# PARTE 1: REEMPLAZAR las 3 vistas de categoría
-# en gastos/views.py (al final del archivo)
-# ═══════════════════════════════════════════════
+
+# ─────────────────────────────────────────────
+# CATEGORÍAS
+# ─────────────────────────────────────────────
 
 CATEGORIAS_SUGERIDAS = [
-    {'nombre': 'Supermercado', 'icono': '🛒', 'color': '#16a34a'},
-    {'nombre': 'Salud',        'icono': '🏥', 'color': '#dc2626'},
-    {'nombre': 'Arriendo',     'icono': '🏠', 'color': '#7c3aed'},
-    {'nombre': 'Transporte',   'icono': '🚗', 'color': '#2563eb'},
-    {'nombre': 'Educación',    'icono': '🎓', 'color': '#0891b2'},
-    {'nombre': 'Servicios',    'icono': '💡', 'color': '#d97706'},
-    {'nombre': 'Pyme',         'icono': '💼', 'color': '#059669'},
-    {'nombre': 'Restaurantes', 'icono': '🍽️', 'color': '#ea580c'},
-    {'nombre': 'Ropa',         'icono': '👕', 'color': '#db2777'},
-    {'nombre': 'Entretenimiento','icono':'🎬', 'color': '#7c3aed'},
-    {'nombre': 'Mascotas',     'icono': '🐾', 'color': '#65a30d'},
-    {'nombre': 'Viajes',       'icono': '✈️', 'color': '#0284c7'},
-    {'nombre': 'Tecnología',   'icono': '📱', 'color': '#4f46e5'},
-    {'nombre': 'Farmacia',     'icono': '💊', 'color': '#be123c'},
-    {'nombre': 'Hogar',        'icono': '🔧', 'color': '#92400e'},
-    {'nombre': 'Regalos',      'icono': '🎁', 'color': '#be185d'},
+    {'nombre': 'Supermercado',    'icono': '🛒', 'color': '#16a34a'},
+    {'nombre': 'Salud',           'icono': '🏥', 'color': '#dc2626'},
+    {'nombre': 'Arriendo',        'icono': '🏠', 'color': '#7c3aed'},
+    {'nombre': 'Transporte',      'icono': '🚗', 'color': '#2563eb'},
+    {'nombre': 'Educación',       'icono': '🎓', 'color': '#0891b2'},
+    {'nombre': 'Servicios',       'icono': '💡', 'color': '#d97706'},
+    {'nombre': 'Pyme',            'icono': '💼', 'color': '#059669'},
+    {'nombre': 'Restaurantes',    'icono': '🍽️', 'color': '#ea580c'},
+    {'nombre': 'Ropa',            'icono': '👕', 'color': '#db2777'},
+    {'nombre': 'Entretenimiento', 'icono': '🎬', 'color': '#7c3aed'},
+    {'nombre': 'Mascotas',        'icono': '🐾', 'color': '#65a30d'},
+    {'nombre': 'Viajes',          'icono': '✈️', 'color': '#0284c7'},
+    {'nombre': 'Tecnología',      'icono': '📱', 'color': '#4f46e5'},
+    {'nombre': 'Farmacia',        'icono': '💊', 'color': '#be123c'},
+    {'nombre': 'Hogar',           'icono': '🔧', 'color': '#92400e'},
+    {'nombre': 'Regalos',         'icono': '🎁', 'color': '#be185d'},
 ]
 
 
@@ -585,66 +656,17 @@ def eliminar_categoria(request, pk):
         messages.success(request, 'Categoría eliminada.')
     return redirect('lista_categorias')
 
-@login_required
-def exportar_compras_excel(request):
-    import openpyxl
-    from django.http import HttpResponse
-    categoria_filtro = request.GET.get('categoria', '')
-    items = ItemCompra.objects.filter(usuario=request.user).select_related('categoria')
-    if categoria_filtro:
-        items = items.filter(categoria__pk=categoria_filtro)
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Lista de Compras"
-    ws.append(['Ítem', 'Cantidad', 'Comprado', 'Precio Unit.', 'Total', 'Categoría'])
-    for item in items:
-        ws.append([
-            item.nombre,
-            item.cantidad,
-            'Sí' if item.comprado else 'No',
-            float(item.valor_aprox) if item.valor_aprox else '',
-            float(item.total) if item.total else '',
-            str(item.categoria) if item.categoria else '',
-        ])
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="lista_compras.xlsx"'
-    wb.save(response)
-    return response
 
-@login_required
-def editar_compra(request, pk):
-    from .models import LocalCompra
-    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        item.nombre = request.POST.get('nombre', item.nombre)
-        item.cantidad = int(request.POST.get('cantidad', item.cantidad))
-        item.valor_aprox = request.POST.get('valor_aprox') or None
-        item.categoria_id = request.POST.get('categoria') or None
-        item.local_compra_id = request.POST.get('local') or None
-        item.save()
-        messages.success(request, 'Ítem actualizado.')
-        return redirect('lista_compras')
-    return render(request, 'gastos/editar_compra.html', {
-        'item': item,
-        'categorias': Categoria.objects.all(),
-        'locales': LocalCompra.objects.all(),
-    })
-
-@login_required
-def eliminar_compra(request, pk):
-    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
-    if request.method == 'POST':
-        item.delete()
-        messages.success(request, 'Ítem eliminado.')
-    return redirect('lista_compras')
+# ─────────────────────────────────────────────
+# LOCALES DE COMPRA
+# ─────────────────────────────────────────────
 
 @login_required
 def lista_locales(request):
     from .models import LocalCompra
     locales = LocalCompra.objects.all()
     return render(request, 'gastos/locales.html', {'locales': locales})
+
 
 @login_required
 def nuevo_local(request):
@@ -658,6 +680,7 @@ def nuevo_local(request):
             return redirect('lista_locales')
         messages.error(request, 'El nombre no puede estar vacío.')
     return render(request, 'gastos/form_local.html')
+
 
 @login_required
 def editar_local(request, pk):
@@ -675,6 +698,7 @@ def editar_local(request, pk):
         messages.error(request, 'El nombre no puede estar vacío.')
     return render(request, 'gastos/form_local.html', {'local': local})
 
+
 @login_required
 def eliminar_local(request, pk):
     from .models import LocalCompra
@@ -683,6 +707,11 @@ def eliminar_local(request, pk):
         local.delete()
         messages.success(request, 'Local eliminado.')
     return redirect('lista_locales')
+
+
+# ─────────────────────────────────────────────
+# PRIVACIDAD
+# ─────────────────────────────────────────────
 
 def privacidad(request):
     return render(request, 'gastos/privacidad.html')

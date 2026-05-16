@@ -60,6 +60,19 @@ class Gasto(models.Model):
         return None
 
 
+class LocalCompra(models.Model):
+    nombre = models.CharField(max_length=150)
+    icono = models.CharField(max_length=10, default='🏪')
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Local de compra'
+        verbose_name_plural = 'Locales de compra'
+
+    def __str__(self):
+        return f"{self.icono} {self.nombre}"
+
+
 class ItemCompra(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lista_compras')
     nombre = models.CharField(max_length=150)
@@ -68,6 +81,7 @@ class ItemCompra(models.Model):
     valor_aprox = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
     comprado = models.BooleanField(default=False)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
+    local_compra = models.ForeignKey(LocalCompra, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
     creado_en = models.DateTimeField(auto_now_add=True)
 
     @property

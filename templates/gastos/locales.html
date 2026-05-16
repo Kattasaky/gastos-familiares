@@ -1,0 +1,35 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}Locales de Compra{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>🏪 Locales de Compra</h4>
+    <a href="{% url 'nuevo_local' %}" class="btn btn-dark">+ Nuevo local</a>
+</div>
+<div class="row g-3">
+    {% for l in locales %}
+    <div class="col-6 col-md-3">
+        <div class="card h-100 text-center">
+            <div class="card-body py-3">
+                <div style="font-size:2rem">{{ l.icono }}</div>
+                <strong class="d-block mt-1">{{ l.nombre }}</strong>
+                <div class="mt-2 d-flex gap-1 justify-content-center">
+                    <a href="{% url 'editar_local' l.pk %}" class="btn btn-sm btn-outline-primary">✏️ Editar</a>
+                    <form method="post" action="{% url 'eliminar_local' l.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('¿Eliminar {{ l.nombre }}?')">🗑</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div style="font-size:3rem">🏪</div>
+        <h5 class="mt-3">No hay locales todavía</h5>
+        <p class="text-muted">Crea los locales donde compras habitualmente.</p>
+        <a href="{% url 'nuevo_local' %}" class="btn btn-dark">Crear primer local</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

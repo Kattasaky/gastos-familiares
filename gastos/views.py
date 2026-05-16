@@ -615,16 +615,74 @@ def exportar_compras_excel(request):
 
 @login_required
 def editar_compra(request, pk):
+    from .models import LocalCompra
     item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
     if request.method == 'POST':
         item.nombre = request.POST.get('nombre', item.nombre)
         item.cantidad = int(request.POST.get('cantidad', item.cantidad))
         item.valor_aprox = request.POST.get('valor_aprox') or None
         item.categoria_id = request.POST.get('categoria') or None
+        item.local_compra_id = request.POST.get('local') or None
         item.save()
         messages.success(request, 'Ítem actualizado.')
         return redirect('lista_compras')
     return render(request, 'gastos/editar_compra.html', {
         'item': item,
         'categorias': Categoria.objects.all(),
+        'locales': LocalCompra.objects.all(),
     })
+
+@login_required
+def eliminar_compra(request, pk):
+    item = get_object_or_404(ItemCompra, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Ítem eliminado.')
+    return redirect('lista_compras')
+
+@login_required
+def lista_locales(request):
+    from .models import LocalCompra
+    locales = LocalCompra.objects.all()
+    return render(request, 'gastos/locales.html', {'locales': locales})
+
+@login_required
+def nuevo_local(request):
+    from .models import LocalCompra
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        icono = request.POST.get('icono', '🏪').strip()
+        if nombre:
+            LocalCompra.objects.create(nombre=nombre, icono=icono)
+            messages.success(request, f'Local "{nombre}" creado.')
+            return redirect('lista_locales')
+        messages.error(request, 'El nombre no puede estar vacío.')
+    return render(request, 'gastos/form_local.html')
+
+@login_required
+def editar_local(request, pk):
+    from .models import LocalCompra
+    local = get_object_or_404(LocalCompra, pk=pk)
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        icono = request.POST.get('icono', local.icono).strip()
+        if nombre:
+            local.nombre = nombre
+            local.icono = icono
+            local.save()
+            messages.success(request, f'Local "{nombre}" actualizado.')
+            return redirect('lista_locales')
+        messages.error(request, 'El nombre no puede estar vacío.')
+    return render(request, 'gastos/form_local.html', {'local': local})
+
+@login_required
+def eliminar_local(request, pk):
+    from .models import LocalCompra
+    local = get_object_or_404(LocalCompra, pk=pk)
+    if request.method == 'POST':
+        local.delete()
+        messages.success(request, 'Local eliminado.')
+    return redirect('lista_locales')
+
+def privacidad(request):
+    return render(request, 'gastos/privacidad.html')

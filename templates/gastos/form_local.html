@@ -1,0 +1,26 @@
+{% extends 'gastos/base.html' %}
+{% block titulo %}{% if local %}Editar{% else %}Nuevo{% endif %} Local{% endblock %}
+{% block contenido %}
+<h4 class="mb-4">🏪 {% if local %}Editar{% else %}Nuevo{% endif %} Local de Compra</h4>
+<div class="col-md-6">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Icono</label>
+            <input type="text" name="icono" class="form-control"
+                   value="{{ local.icono|default:'🏪' }}" maxlength="5">
+            <div class="form-text">Pega un emoji. Ej: 🛒 🏬 🥩 🥦 🧴</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nombre del local</label>
+            <input type="text" name="nombre" class="form-control"
+                   value="{{ local.nombre|default:'' }}" required
+                   placeholder="Ej: Líder, Jumbo, Fruna, Farmacia Cruz Verde">
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-dark">Guardar</button>
+            <a href="{% url 'lista_locales' %}" class="btn btn-outline-dark">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

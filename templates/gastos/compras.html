@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>🛒 Lista de Compras</h4>
     <div class="d-flex gap-2">
-        <a href="{% url 'exportar_compras_excel' %}{% if categoria_filtro %}?categoria={{ categoria_filtro }}{% endif %}"
+        <a href="{% url 'exportar_compras_excel' %}?{% if categoria_filtro %}categoria={{ categoria_filtro }}&{% endif %}{% if local_filtro %}local={{ local_filtro }}{% endif %}"
            class="btn btn-success btn-sm">⬇️ Excel</a>
         <form method="post" action="{% url 'limpiar_comprados' %}">
             {% csrf_token %}
@@ -18,54 +18,89 @@
 {# ─── Formulario agregar ítem ─── #}
 <form method="post" action="{% url 'agregar_compra' %}" class="row g-2 mb-4">
     {% csrf_token %}
-    <div class="col-md-4" style="position:relative">
+    <div class="col-md-3" style="position:relative">
         <input type="text" name="nombre" id="inputNombre" class="form-control"
                placeholder="Ítem (ej: Papel higiénico)" required autocomplete="off">
         <div id="sugerencias" style="position:absolute;z-index:999;background:var(--bg-card);
              border:1px solid var(--border-color);border-radius:6px;width:100%;display:none;
              max-height:200px;overflow-y:auto;"></div>
     </div>
-    <div class="col-md-2">
-        <input type="number" name="cantidad" class="form-control" value="1" min="1" placeholder="Cantidad">
+    <div class="col-md-1">
+        <input type="number" name="cantidad" class="form-control" value="1" min="1" placeholder="Cant.">
     </div>
     <div class="col-md-2">
         <input type="number" name="valor_aprox" class="form-control" placeholder="Precio unit.">
     </div>
     <div class="col-md-3" style="position:relative">
-    <input type="text" id="buscarCat" class="form-control"
-           placeholder="🏷️ Categoría..." autocomplete="off">
-    <input type="hidden" name="categoria" id="categoriaSeleccionada">
-    <div id="listaCats" style="position:absolute;z-index:1000;background:var(--bg-card);
-         border:1px solid var(--border-color);border-radius:6px;width:100%;
-         display:none;max-height:200px;overflow-y:auto;">
-        <div class="cat-opcion" data-valor="" style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
-            Sin categoría
+        <input type="text" id="buscarCat" class="form-control"
+               placeholder="🏷️ Categoría..." autocomplete="off">
+        <input type="hidden" name="categoria" id="categoriaSeleccionada">
+        <div id="listaCats" style="position:absolute;z-index:1000;background:var(--bg-card);
+             border:1px solid var(--border-color);border-radius:6px;width:100%;
+             display:none;max-height:200px;overflow-y:auto;">
+            <div class="cat-opcion" data-valor=""
+                 style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+                Sin categoría
+            </div>
+            {% for c in categorias %}
+            <div class="cat-opcion" data-valor="{{ c.pk }}"
+                 style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+                {{ c.icono }} {{ c.nombre }}
+            </div>
+            {% endfor %}
         </div>
-        {% for c in categorias %}
-        <div class="cat-opcion" data-valor="{{ c.pk }}"
-             style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
-            {{ c.icono }} {{ c.nombre }}
-        </div>
-        {% endfor %}
     </div>
-</div>
+    <div class="col-md-2" style="position:relative">
+        <input type="text" id="buscarLocal" class="form-control"
+               placeholder="🏪 Local..." autocomplete="off">
+        <input type="hidden" name="local" id="localSeleccionado">
+        <div id="listaLocales" style="position:absolute;z-index:1000;background:var(--bg-card);
+             border:1px solid var(--border-color);border-radius:6px;width:100%;
+             display:none;max-height:200px;overflow-y:auto;">
+            <div class="local-opcion" data-valor=""
+                 style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+                Sin local
+            </div>
+            {% for l in locales %}
+            <div class="local-opcion" data-valor="{{ l.pk }}"
+                 style="padding:8px 12px;cursor:pointer;color:var(--text-body);">
+                {{ l.icono }} {{ l.nombre }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     <div class="col-md-1">
         <button class="btn btn-dark w-100">+</button>
     </div>
 </form>
 
 {# ─── Filtro por categoría ─── #}
-<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-    <span class="text-muted small">Filtrar:</span>
-    <a href="{% url 'lista_compras' %}"
+<div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+    <span class="text-muted small">📂 Categoría:</span>
+    <a href="{% url 'lista_compras' %}{% if local_filtro %}?local={{ local_filtro }}{% endif %}"
        class="btn btn-sm {% if not categoria_filtro %}btn-dark{% else %}btn-outline-secondary{% endif %}">
         Todas
     </a>
     {% for c in categorias %}
-    <a href="{% url 'lista_compras' %}?categoria={{ c.pk }}"
+    <a href="?categoria={{ c.pk }}{% if local_filtro %}&local={{ local_filtro }}{% endif %}"
        class="btn btn-sm {% if categoria_filtro == c.pk|stringformat:'s' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
-       style="border-color: {{ c.color }}; {% if categoria_filtro == c.pk|stringformat:'s' %}background:{{ c.color }};color:white;{% endif %}">
+       style="border-color:{{ c.color }};{% if categoria_filtro == c.pk|stringformat:'s' %}background:{{ c.color }};color:white;{% endif %}">
         {{ c.icono }} {{ c.nombre }}
+    </a>
+    {% endfor %}
+</div>
+
+{# ─── Filtro por local ─── #}
+<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <span class="text-muted small">🏪 Local:</span>
+    <a href="{% url 'lista_compras' %}{% if categoria_filtro %}?categoria={{ categoria_filtro }}{% endif %}"
+       class="btn btn-sm {% if not local_filtro %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        Todos
+    </a>
+    {% for l in locales %}
+    <a href="?local={{ l.pk }}{% if categoria_filtro %}&categoria={{ categoria_filtro }}{% endif %}"
+       class="btn btn-sm {% if local_filtro == l.pk|stringformat:'s' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ l.icono }} {{ l.nombre }}
     </a>
     {% endfor %}
 </div>
@@ -102,13 +137,13 @@
     <li class="list-group-item">
         <div class="d-flex align-items-center gap-3">
 
-            {# Botón toggle (compra parcial) #}
+            {# Botón toggle #}
             <form method="post" action="{% url 'toggle_compra' item.pk %}" class="mb-0">
                 {% csrf_token %}
                 {% if item.comprado %}
                 <button class="btn btn-success btn-sm" title="Haz clic para desmarcar">✓</button>
                 {% elif item.cantidad > 1 %}
-                <button class="btn btn-outline-primary btn-sm" title="Marcar 1 unidad más como comprada">
+                <button class="btn btn-outline-primary btn-sm" title="Marcar 1 unidad más">
                     {{ item.cantidad_comprada }}/{{ item.cantidad }}
                 </button>
                 {% else %}
@@ -118,7 +153,7 @@
 
             {# Nombre y detalle #}
             <div class="flex-grow-1">
-                <span {% if item.comprado %}style="text-decoration:line-through; color:#aaa;"{% endif %}>
+                <span {% if item.comprado %}style="text-decoration:line-through;color:#aaa;"{% endif %}>
                     <strong>{{ item.nombre }}</strong>
                 </span>
                 <div class="small text-muted">
@@ -126,6 +161,9 @@
                     <span class="badge" style="background-color:{{ item.categoria.color }}">
                         {{ item.categoria.icono }} {{ item.categoria.nombre }}
                     </span>
+                    {% endif %}
+                    {% if item.local_compra %}
+                    <span class="badge bg-secondary">{{ item.local_compra.icono }} {{ item.local_compra.nombre }}</span>
                     {% endif %}
                     {% if item.cantidad > 1 %}&nbsp;· Cantidad: {{ item.cantidad }}{% endif %}
                     {% if item.valor_aprox %}
@@ -152,58 +190,45 @@
 </ul>
 
 <script>
+// ── Autocomplete nombre ──
 const itemsExistentes = [
-    {% for item in items %}
-    "{{ item.nombre }}",
-    {% endfor %}
+    {% for item in items %}"{{ item.nombre }}",{% endfor %}
 ];
-
 const input = document.getElementById('inputNombre');
 const caja = document.getElementById('sugerencias');
-
 input.addEventListener('input', function() {
     const texto = this.value.toLowerCase().trim();
     caja.innerHTML = '';
     if (texto.length < 2) { caja.style.display = 'none'; return; }
-
     const coincidencias = itemsExistentes.filter(n => n.toLowerCase().includes(texto));
-    if (coincidencias.length === 0) { caja.style.display = 'none'; return; }
-
+    if (!coincidencias.length) { caja.style.display = 'none'; return; }
     coincidencias.forEach(nombre => {
         const div = document.createElement('div');
         div.textContent = nombre;
         div.style.cssText = 'padding:8px 12px;cursor:pointer;color:var(--text-body);';
         div.addEventListener('mouseenter', () => div.style.background = 'var(--table-hover)');
         div.addEventListener('mouseleave', () => div.style.background = '');
-        div.addEventListener('click', () => {
-            input.value = nombre;
-            caja.style.display = 'none';
-        });
+        div.addEventListener('click', () => { input.value = nombre; caja.style.display = 'none'; });
         caja.appendChild(div);
     });
     caja.style.display = 'block';
 });
+document.addEventListener('click', (e) => { if (!input.contains(e.target)) caja.style.display = 'none'; });
 
-document.addEventListener('click', (e) => {
-    if (!input.contains(e.target)) caja.style.display = 'none';
-});
-// ── Buscador de categorías ──
+// ── Buscador categorías ──
 const buscarCat = document.getElementById('buscarCat');
 const listaCats = document.getElementById('listaCats');
 const catHidden = document.getElementById('categoriaSeleccionada');
-const opciones = document.querySelectorAll('.cat-opcion');
-
+const opcionesCat = document.querySelectorAll('.cat-opcion');
 buscarCat.addEventListener('focus', () => listaCats.style.display = 'block');
-
 buscarCat.addEventListener('input', function() {
     const texto = this.value.toLowerCase();
-    opciones.forEach(op => {
+    opcionesCat.forEach(op => {
         op.style.display = op.textContent.toLowerCase().includes(texto) ? 'block' : 'none';
     });
     listaCats.style.display = 'block';
 });
-
-opciones.forEach(op => {
+opcionesCat.forEach(op => {
     op.addEventListener('mouseenter', () => op.style.background = 'var(--table-hover)');
     op.addEventListener('mouseleave', () => op.style.background = '');
     op.addEventListener('click', () => {
@@ -212,13 +237,35 @@ opciones.forEach(op => {
         listaCats.style.display = 'none';
     });
 });
-
 document.addEventListener('click', (e) => {
-    if (!buscarCat.contains(e.target) && !listaCats.contains(e.target)) {
-        listaCats.style.display = 'none';
-    }
+    if (!buscarCat.contains(e.target) && !listaCats.contains(e.target)) listaCats.style.display = 'none';
 });
 
+// ── Buscador locales ──
+const buscarLocal = document.getElementById('buscarLocal');
+const listaLocales = document.getElementById('listaLocales');
+const localHidden = document.getElementById('localSeleccionado');
+const opcionesLocal = document.querySelectorAll('.local-opcion');
+buscarLocal.addEventListener('focus', () => listaLocales.style.display = 'block');
+buscarLocal.addEventListener('input', function() {
+    const texto = this.value.toLowerCase();
+    opcionesLocal.forEach(op => {
+        op.style.display = op.textContent.toLowerCase().includes(texto) ? 'block' : 'none';
+    });
+    listaLocales.style.display = 'block';
+});
+opcionesLocal.forEach(op => {
+    op.addEventListener('mouseenter', () => op.style.background = 'var(--table-hover)');
+    op.addEventListener('mouseleave', () => op.style.background = '');
+    op.addEventListener('click', () => {
+        localHidden.value = op.dataset.valor;
+        buscarLocal.value = op.textContent.trim();
+        listaLocales.style.display = 'none';
+    });
+});
+document.addEventListener('click', (e) => {
+    if (!buscarLocal.contains(e.target) && !listaLocales.contains(e.target)) listaLocales.style.display = 'none';
+});
 </script>
 
 {% endblock %}

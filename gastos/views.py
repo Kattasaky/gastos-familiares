@@ -707,6 +707,21 @@ def eliminar_local(request, pk):
         local.delete()
         messages.success(request, 'Local eliminado.')
     return redirect('lista_locales')
+@login_required
+def editar_prestamo(request, pk):
+    prestamo = get_object_or_404(Prestamo, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        prestamo.persona = request.POST.get('persona', prestamo.persona)
+        prestamo.concepto = request.POST.get('concepto', prestamo.concepto)
+        prestamo.monto_total = request.POST.get('monto_total', prestamo.monto_total)
+        prestamo.tipo = request.POST.get('tipo', prestamo.tipo)
+        prestamo.fecha_prestamo = request.POST.get('fecha_prestamo') or prestamo.fecha_prestamo
+        prestamo.fecha_vencimiento = request.POST.get('fecha_vencimiento') or None
+        prestamo.notas = request.POST.get('notas', prestamo.notas)
+        prestamo.save()
+        messages.success(request, 'Préstamo actualizado.')
+        return redirect('lista_prestamos')
+    return render(request, 'gastos/form_prestamo.html', {'prestamo': prestamo})
 
 
 # ─────────────────────────────────────────────

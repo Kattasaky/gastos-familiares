@@ -81,6 +81,7 @@
                             Pagar
                         </button>
                         {% endif %}
+                        <a href="{% url 'editar_prestamo' p.pk %}" class="btn btn-sm btn-primary">Editar</a>
                         <a href="{% url 'detalle_prestamo' p.pk %}" class="btn btn-sm btn-outline-dark">Ver</a>
                         <form method="post" action="{% url 'eliminar_prestamo' p.pk %}">
                             {% csrf_token %}
@@ -142,6 +143,7 @@
                             Cobrar
                         </button>
                         {% endif %}
+                        <a href="{% url 'editar_prestamo' p.pk %}" class="btn btn-sm btn-primary">Editar</a>
                         <a href="{% url 'detalle_prestamo' p.pk %}" class="btn btn-sm btn-outline-dark">Ver</a>
                         <form method="post" action="{% url 'eliminar_prestamo' p.pk %}">
                             {% csrf_token %}

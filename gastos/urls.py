@@ -45,7 +45,8 @@ urlpatterns = [
     path('prestamos/<int:pk>/pagar/', views.registrar_pago_prestamo, name='registrar_pago_prestamo'),
     path('prestamos/<int:pk>/eliminar/', views.eliminar_prestamo, name='eliminar_prestamo'),
     path('prestamos/<int:pk>/detalle/', views.detalle_prestamo, name='detalle_prestamo'),
-
+    path('prestamos/<int:pk>/editar/', views.editar_prestamo, name='editar_prestamo'),
+    
     # Metas de ahorro
     path('metas/', views.lista_metas, name='lista_metas'),
     path('metas/nueva/', views.nueva_meta, name='nueva_meta'),

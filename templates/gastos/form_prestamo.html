@@ -1,8 +1,8 @@
 {% extends 'gastos/base.html' %}
-{% block titulo %}Nuevo Préstamo{% endblock %}
+{% block titulo %}{% if prestamo %}Editar{% else %}Nuevo{% endif %} Préstamo{% endblock %}
 
 {% block contenido %}
-<h4 class="mb-4">💸 Nuevo Préstamo</h4>
+<h4 class="mb-4">💸 {% if prestamo %}Editar{% else %}Nuevo{% endif %} Préstamo</h4>
 
 <div class="col-md-6">
     <form method="post">
@@ -11,20 +11,26 @@
         <div class="mb-3">
             <label class="form-label">¿Qué tipo de préstamo es?</label>
             <select name="tipo" class="form-select">
-                <option value="recibido">Me prestaron a mí (yo debo)</option>
-                <option value="otorgado">Yo presté dinero</option>
+                <option value="recibido" {% if prestamo and prestamo.tipo == 'recibido' %}selected{% endif %}>
+                    Me prestaron a mí (yo debo)
+                </option>
+                <option value="otorgado" {% if prestamo and prestamo.tipo == 'otorgado' %}selected{% endif %}>
+                    Yo presté dinero
+                </option>
             </select>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Nombre de la otra persona</label>
             <input type="text" name="persona" class="form-control"
+                   value="{{ prestamo.persona|default:'' }}"
                    placeholder="Ej: Mamá, Tío Carlos" required>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Concepto / Motivo</label>
             <input type="text" name="concepto" class="form-control"
+                   value="{{ prestamo.concepto|default:'' }}"
                    placeholder="Ej: Gastos médicos, Arriendo enero" required>
         </div>
 
@@ -32,29 +38,34 @@
             <label class="form-label">Monto total del préstamo</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" name="monto_total" class="form-control" required min="1">
+                <input type="number" name="monto_total" class="form-control"
+                       value="{{ prestamo.monto_total|default:'' }}" required min="1">
             </div>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Fecha del préstamo</label>
-            <input type="date" name="fecha_prestamo" class="form-control">
+            <input type="date" name="fecha_prestamo" class="form-control"
+                   value="{{ prestamo.fecha_prestamo|default:'' }}">
             <small class="text-muted">Si dejás vacío, se usa la fecha de hoy.</small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Fecha límite para pagar (opcional)</label>
-            <input type="date" name="fecha_vencimiento" class="form-control">
+            <input type="date" name="fecha_vencimiento" class="form-control"
+                   value="{{ prestamo.fecha_vencimiento|default:'' }}">
         </div>
 
         <div class="mb-3">
             <label class="form-label">Notas adicionales</label>
             <textarea name="notas" class="form-control" rows="3"
-                      placeholder="Ej: Se acordó pagar en cuotas de $50.000 cada mes"></textarea>
+                      placeholder="Ej: Se acordó pagar en cuotas de $50.000 cada mes">{{ prestamo.notas|default:'' }}</textarea>
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-dark">Guardar préstamo</button>
+            <button type="submit" class="btn btn-dark">
+                {% if prestamo %}Guardar cambios{% else %}Guardar préstamo{% endif %}
+            </button>
             <a href="{% url 'lista_prestamos' %}" class="btn btn-outline-dark">Cancelar</a>
         </div>
     </form>

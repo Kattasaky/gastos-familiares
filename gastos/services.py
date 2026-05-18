@@ -94,7 +94,7 @@ def gastos_urgentes(usuario):
 # ─────────────────────────────────────────────
 
 def agregar_item_compra(usuario, nombre, cantidad=1, valor_aprox=None,
-                        categoria_id=None):
+                        categoria_id=None, local_id=None):
     if not nombre or not nombre.strip():
         raise ValueError("El nombre no puede estar vacío.")
     return ItemCompra.objects.create(
@@ -103,6 +103,7 @@ def agregar_item_compra(usuario, nombre, cantidad=1, valor_aprox=None,
         cantidad=cantidad,
         valor_aprox=valor_aprox,
         categoria_id=categoria_id,
+        local_compra_id=local_id,
     )
 
 

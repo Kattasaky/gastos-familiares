@@ -46,13 +46,14 @@ urlpatterns = [
     path('prestamos/<int:pk>/eliminar/', views.eliminar_prestamo, name='eliminar_prestamo'),
     path('prestamos/<int:pk>/detalle/', views.detalle_prestamo, name='detalle_prestamo'),
     path('prestamos/<int:pk>/editar/', views.editar_prestamo, name='editar_prestamo'),
-    
+
     # Metas de ahorro
     path('metas/', views.lista_metas, name='lista_metas'),
     path('metas/nueva/', views.nueva_meta, name='nueva_meta'),
     path('metas/<int:pk>/aporte/', views.registrar_aporte, name='registrar_aporte'),
     path('metas/<int:pk>/eliminar/', views.eliminar_meta, name='eliminar_meta'),
     path('metas/<int:pk>/archivar/', views.archivar_meta, name='archivar_meta'),
+    path('metas/<int:pk>/editar/', views.editar_meta, name='editar_meta'),
 
     # Registro
     path('registro/', views.registro, name='registro'),

@@ -85,6 +85,7 @@
                         + Aporte
                     </button>
                     {% endif %}
+                    <a href="{% url 'editar_meta' meta.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
                     <form method="post" action="{% url 'archivar_meta' meta.pk %}">
                         {% csrf_token %}
                         <button class="btn btn-sm btn-outline-secondary">Archivar</button>

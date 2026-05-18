@@ -561,6 +561,22 @@ def archivar_meta(request, pk):
         messages.success(request, '¡Meta archivada!')
     return redirect('lista_metas')
 
+@login_required
+def editar_meta(request, pk):
+    meta = get_object_or_404(MetaAhorro, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        meta.nombre = request.POST.get('nombre', meta.nombre)
+        meta.monto_objetivo = request.POST.get('monto_objetivo', meta.monto_objetivo)
+        meta.icono = request.POST.get('icono', meta.icono)
+        meta.fecha_objetivo = request.POST.get('fecha_objetivo') or None
+        meta.descripcion = request.POST.get('descripcion', meta.descripcion)
+        meta.save()
+        messages.success(request, 'Meta actualizada.')
+        return redirect('lista_metas')
+    return render(request, 'gastos/form_meta.html', {
+        'meta': meta,
+        'iconos': MetaAhorro.ICONO_CHOICES,
+    })
 
 # ─────────────────────────────────────────────
 # REGISTRO DE USUARIO

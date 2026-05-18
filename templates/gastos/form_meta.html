@@ -1,8 +1,8 @@
 {% extends 'gastos/base.html' %}
-{% block titulo %}Nueva Meta de Ahorro{% endblock %}
+{% block titulo %}{% if meta %}Editar{% else %}Nueva{% endif %} Meta de Ahorro{% endblock %}
 
 {% block contenido %}
-<h4 class="mb-4">🎯 Nueva Meta de Ahorro</h4>
+<h4 class="mb-4">🎯 {% if meta %}Editar{% else %}Nueva{% endif %} Meta de Ahorro</h4>
 
 <div class="col-md-6">
     <form method="post">
@@ -11,6 +11,7 @@
         <div class="mb-3">
             <label class="form-label">¿Para qué estás ahorrando?</label>
             <input type="text" name="nombre" class="form-control"
+                   value="{{ meta.nombre|default:'' }}"
                    placeholder="Ej: Viaje a Mendoza, Fondo de emergencia" required>
         </div>
 
@@ -18,33 +19,39 @@
             <label class="form-label">Icono</label>
             <select name="icono" class="form-select">
                 {% for valor, etiqueta in iconos %}
-                <option value="{{ valor }}">{{ valor }} {{ etiqueta }}</option>
+                <option value="{{ valor }}" {% if meta.icono == valor %}selected{% endif %}>
+                    {{ valor }} {{ etiqueta }}
+                </option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="mb-3">
-            <label class="form-label">¿Cuánto querés ahorrar?</label>
+            <label class="form-label">¿Cuánto quieres ahorrar?</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" name="monto_objetivo" class="form-control" required min="1">
+                <input type="number" name="monto_objetivo" class="form-control"
+                       value="{{ meta.monto_objetivo|default:'' }}" required min="1">
             </div>
         </div>
 
         <div class="mb-3">
             <label class="form-label">¿Para cuándo? (opcional)</label>
-            <input type="date" name="fecha_objetivo" class="form-control">
-            <small class="text-muted">Si ponés una fecha, la app te calcula cuánto ahorrar por mes.</small>
+            <input type="date" name="fecha_objetivo" class="form-control"
+                   value="{{ meta.fecha_objetivo|default:'' }}">
+            <small class="text-muted">Si agregas una fecha, la app calcula cuánto ahorrar por mes.</small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Descripción (opcional)</label>
             <textarea name="descripcion" class="form-control" rows="2"
-                      placeholder="Ej: Viaje de vacaciones de verano con la familia"></textarea>
+                      placeholder="Ej: Viaje de vacaciones de verano con la familia">{{ meta.descripcion|default:'' }}</textarea>
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-dark">Crear meta</button>
+            <button type="submit" class="btn btn-dark">
+                {% if meta %}Guardar cambios{% else %}Crear meta{% endif %}
+            </button>
             <a href="{% url 'lista_metas' %}" class="btn btn-outline-dark">Cancelar</a>
         </div>
     </form>

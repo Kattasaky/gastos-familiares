@@ -38,7 +38,7 @@ urlpatterns = [
     path('ingresos/', views.lista_ingresos, name='lista_ingresos'),
     path('ingresos/nuevo/', views.nuevo_ingreso, name='nuevo_ingreso'),
     path('ingresos/<int:pk>/eliminar/', views.eliminar_ingreso, name='eliminar_ingreso'),
-
+    path('ingresos/<int:pk>/editar/', views.editar_ingreso, name='editar_ingreso'),
     # Préstamos
     path('prestamos/', views.lista_prestamos, name='lista_prestamos'),
     path('prestamos/nuevo/', views.nuevo_prestamo, name='nuevo_prestamo'),

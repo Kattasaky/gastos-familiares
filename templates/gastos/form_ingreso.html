@@ -1,37 +1,45 @@
 {% extends 'gastos/base.html' %}
-{% block titulo %}Nuevo Ingreso{% endblock %}
+{% block titulo %}{% if ingreso %}Editar{% else %}Nuevo{% endif %} Ingreso{% endblock %}
 {% block contenido %}
-<h4 class="mb-4">Nuevo Ingreso</h4>
+<h4 class="mb-4">{% if ingreso %}Editar{% else %}Nuevo{% endif %} Ingreso</h4>
 <div class="col-md-6">
     <form method="post">
         {% csrf_token %}
         <div class="mb-3">
             <label class="form-label">Descripción</label>
-            <input type="text" name="descripcion" class="form-control" required>
+            <input type="text" name="descripcion" class="form-control"
+                   value="{{ ingreso.descripcion|default:'' }}" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Monto</label>
-            <input type="number" name="monto" class="form-control" required>
+            <input type="number" name="monto" class="form-control"
+                   value="{{ ingreso.monto|default:'' }}" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Tipo</label>
             <select name="tipo" class="form-select">
-                <option value="sueldo">Sueldo</option>
-                <option value="extra">Extra</option>
-                <option value="pyme">Pyme</option>
-                <option value="otro">Otro</option>
+                <option value="sueldo" {% if ingreso.tipo == 'sueldo' %}selected{% endif %}>Sueldo</option>
+                <option value="extra"  {% if ingreso.tipo == 'extra'  %}selected{% endif %}>Extra</option>
+                <option value="pyme"   {% if ingreso.tipo == 'pyme'   %}selected{% endif %}>Pyme</option>
+                <option value="otro"   {% if ingreso.tipo == 'otro'   %}selected{% endif %}>Otro</option>
             </select>
         </div>
         <div class="mb-3">
             <label class="form-label">Fecha</label>
-            <input type="date" name="fecha" class="form-control">
+            <input type="date" name="fecha" class="form-control"
+                   value="{{ ingreso.fecha|default:'' }}">
         </div>
         <div class="mb-3 form-check">
-            <input type="checkbox" name="es_fijo" class="form-check-input" id="esFijo">
+            <input type="checkbox" name="es_fijo" class="form-check-input" id="esFijo"
+                   {% if ingreso.es_fijo %}checked{% endif %}>
             <label class="form-check-label" for="esFijo">Es ingreso fijo mensual</label>
         </div>
-        <button type="submit" class="btn btn-dark">Guardar</button>
-        <a href="{% url 'lista_ingresos' %}" class="btn btn-outline-dark">Cancelar</a>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-dark">
+                {% if ingreso %}Guardar cambios{% else %}Guardar{% endif %}
+            </button>
+            <a href="{% url 'lista_ingresos' %}" class="btn btn-outline-dark">Cancelar</a>
+        </div>
     </form>
 </div>
 {% endblock %}

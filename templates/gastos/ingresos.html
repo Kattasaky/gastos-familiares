@@ -36,7 +36,8 @@
             <td>{{ i.get_tipo_display }}</td>
             <td>{{ i.fecha }}</td>
             <td>{% if i.es_fijo %}Sí{% else %}No{% endif %}</td>
-            <td>
+            <td class="d-flex gap-1">
+                <a href="{% url 'editar_ingreso' i.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
                 <form method="post" action="{% url 'eliminar_ingreso' i.pk %}">
                     {% csrf_token %}
                     <button class="btn btn-sm btn-danger">Eliminar</button>

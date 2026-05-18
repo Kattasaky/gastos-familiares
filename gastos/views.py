@@ -411,6 +411,20 @@ def nuevo_ingreso(request):
             messages.error(request, str(e))
     return render(request, 'gastos/form_ingreso.html')
 
+@login_required
+def editar_ingreso(request, pk):
+    ingreso = get_object_or_404(Ingreso, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        ingreso.descripcion = request.POST.get('descripcion', ingreso.descripcion)
+        ingreso.monto = request.POST.get('monto', ingreso.monto)
+        ingreso.tipo = request.POST.get('tipo', ingreso.tipo)
+        ingreso.fecha = request.POST.get('fecha') or ingreso.fecha
+        ingreso.es_fijo = request.POST.get('es_fijo') == 'on'
+        ingreso.save()
+        messages.success(request, 'Ingreso actualizado.')
+        return redirect('lista_ingresos')
+    return render(request, 'gastos/form_ingreso.html', {'ingreso': ingreso})
+
 
 @login_required
 def eliminar_ingreso(request, pk):

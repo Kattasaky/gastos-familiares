@@ -283,7 +283,7 @@ class MetaAhorro(models.Model):
     def ahorro_mensual_necesario(self):
         dias = self.dias_restantes
         if dias and dias > 0 and self.monto_restante > 0:
-            meses = max(dias / 30, 1)
+            meses = max(dias // 30, 1)  # división entera → int, evita Decimal/float TypeError
             return int(self.monto_restante / meses)
         return None
 

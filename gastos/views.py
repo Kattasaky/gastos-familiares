@@ -342,19 +342,40 @@ def eliminar_recurrente(request, pk):
 
 @login_required
 def pagar_cuota_mes(request, pk):
+    hoy = timezone.now().date()
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
-    pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
-    pago.save()
-    Gasto.objects.create(
+
+    # Buscar si ya existe el gasto generado automáticamente este mes
+    gasto_existente = Gasto.objects.filter(
         usuario=request.user,
-        descripcion=f"{pago.descripcion} - cuota {pago.cuotas_pagadas}/{pago.total_cuotas or '∞'}",
-        monto=pago.monto,
-        categoria=pago.categoria,
-        prioridad=pago.prioridad,
-        fecha_vencimiento=timezone.now().date(),
-        estado='pagado',
-    )
-    messages.success(request, 'Cuota marcada como pagada.')
+        descripcion=pago.descripcion,
+        fecha__year=hoy.year,
+        fecha__month=hoy.month,
+    ).first()
+
+    if gasto_existente:
+        # Marcar el gasto existente como pagado
+        gasto_existente.estado = 'pagado'
+        gasto_existente.save(update_fields=['estado', 'actualizado_en'])
+    else:
+        # No existe aún, crear uno nuevo ya pagado
+        Gasto.objects.create(
+            usuario=request.user,
+            descripcion=pago.descripcion,
+            monto=pago.monto,
+            categoria=pago.categoria,
+            prioridad=pago.prioridad,
+            fecha=hoy,
+            fecha_vencimiento=hoy,
+            estado='pagado',
+        )
+
+    # Actualizar contador de cuotas si aplica
+    if pago.total_cuotas:
+        pago.cuotas_pagadas = (pago.cuotas_pagadas or 0) + 1
+        pago.save(update_fields=['cuotas_pagadas'])
+
+    messages.success(request, 'Pago registrado y marcado como pagado en gastos del mes.')
     return redirect('lista_recurrentes')
 
 
@@ -454,17 +475,36 @@ def lista_prestamos(request):
 def nuevo_prestamo(request):
     if request.method == 'POST':
         try:
-            services.crear_prestamo(
+            tipo = request.POST.get('tipo', 'recibido')
+            persona = request.POST.get('persona', '')
+            concepto = request.POST.get('concepto', '')
+            monto_total = request.POST.get('monto_total', 0)
+            fecha_prestamo = request.POST.get('fecha_prestamo') or None
+
+            prestamo = services.crear_prestamo(
                 usuario=request.user,
-                persona=request.POST.get('persona', ''),
-                concepto=request.POST.get('concepto', ''),
-                monto_total=request.POST.get('monto_total', 0),
-                tipo=request.POST.get('tipo', 'recibido'),
-                fecha_prestamo=request.POST.get('fecha_prestamo') or None,
+                persona=persona,
+                concepto=concepto,
+                monto_total=monto_total,
+                tipo=tipo,
+                fecha_prestamo=fecha_prestamo,
                 fecha_vencimiento=request.POST.get('fecha_vencimiento') or None,
                 notas=request.POST.get('notas', ''),
             )
-            messages.success(request, 'Préstamo registrado.')
+
+            # Si presté dinero → es un egreso real
+            if tipo == 'otorgado':
+                Gasto.objects.create(
+                    usuario=request.user,
+                    descripcion=f"Préstamo a {persona} — {concepto}",
+                    monto=monto_total,
+                    fecha=fecha_prestamo or timezone.now().date(),
+                    estado='pagado',
+                    prioridad='alta',
+                )
+                messages.success(request, 'Préstamo registrado y agregado a tus gastos del mes.')
+            else:
+                messages.success(request, 'Préstamo registrado.')
             return redirect('lista_prestamos')
         except ValueError as e:
             messages.error(request, str(e))
@@ -475,14 +515,34 @@ def nuevo_prestamo(request):
 def registrar_pago_prestamo(request, pk):
     if request.method == 'POST':
         try:
+            prestamo = get_object_or_404(Prestamo, pk=pk, usuario=request.user)
+            monto = request.POST.get('monto', 0)
+            fecha = request.POST.get('fecha') or None
+            notas = request.POST.get('notas', '')
+
             services.registrar_pago_prestamo(
                 usuario=request.user,
                 prestamo_id=pk,
-                monto=request.POST.get('monto', 0),
-                fecha=request.POST.get('fecha') or None,
-                notas=request.POST.get('notas', ''),
+                monto=monto,
+                fecha=fecha,
+                notas=notas,
             )
-            messages.success(request, 'Pago registrado.')
+
+            # Si yo debo (préstamo recibido), el pago es un egreso real → crear gasto
+            if prestamo.tipo == 'recibido':
+                Gasto.objects.create(
+                    usuario=request.user,
+                    descripcion=f"Pago préstamo: {prestamo.persona} — {prestamo.concepto}",
+                    monto=monto,
+                    fecha=fecha or timezone.now().date(),
+                    estado='pagado',
+                    prioridad='alta',
+                    notas=notas,
+                )
+                messages.success(request, 'Pago registrado y agregado a tus gastos del mes.')
+            else:
+                messages.success(request, 'Cobro registrado.')
+
         except (ValueError, Prestamo.DoesNotExist) as e:
             messages.error(request, str(e))
     return redirect('lista_prestamos')

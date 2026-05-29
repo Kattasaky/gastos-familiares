@@ -112,6 +112,7 @@ def editar_gasto(request, pk):
         gasto.descripcion = request.POST.get('descripcion', gasto.descripcion)
         gasto.monto = request.POST.get('monto', gasto.monto)
         gasto.categoria_id = request.POST.get('categoria') or None
+        gasto.fecha = request.POST.get('fecha') or gasto.fecha
         gasto.prioridad = request.POST.get('prioridad', gasto.prioridad)
         gasto.notas = request.POST.get('notas', gasto.notas)
         gasto.save()

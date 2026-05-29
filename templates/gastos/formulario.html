@@ -30,6 +30,12 @@
             </select>
         </div>
         <div class="mb-3">
+            <label class="form-label">Fecha del gasto</label>
+            <input type="date" name="fecha" class="form-control"
+                value="{{ gasto.fecha }}">
+            <small class="text-muted">Si no seleccionas fecha se usa hoy.</small>
+        </div>
+        <div class="mb-3">
             <label class="form-label">Fecha vencimiento</label>
             <input type="date" name="fecha_vencimiento" class="form-control"
                 value="{{ gasto.fecha_vencimiento }}">
@@ -37,10 +43,10 @@
         <div class="mb-3">
             <label class="form-label">Prioridad</label>
             <select name="prioridad" class="form-select">
-                <option value="normal">Normal</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-                <option value="postergable">Postergable</option>
+                <option value="normal" {% if gasto.prioridad == 'normal' %}selected{% endif %}>Normal</option>
+                <option value="alta" {% if gasto.prioridad == 'alta' %}selected{% endif %}>Alta</option>
+                <option value="urgente" {% if gasto.prioridad == 'urgente' %}selected{% endif %}>Urgente</option>
+                <option value="postergable" {% if gasto.prioridad == 'postergable' %}selected{% endif %}>Postergable</option>
             </select>
         </div>
         <div class="mb-3">

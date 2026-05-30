@@ -1,38 +1,41 @@
 {% extends 'gastos/base.html' %}
 
-{% block titulo %}Nuevo Pago Recurrente{% endblock %}
+{% block titulo %}{% if pago %}Editar{% else %}Nuevo{% endif %} Pago Recurrente{% endblock %}
 
 {% block contenido %}
-<h4 class="mb-4">Nuevo Pago Recurrente</h4>
+<h4 class="mb-4">{% if pago %}Editar{% else %}Nuevo{% endif %} Pago Recurrente</h4>
 <div class="col-md-6">
     <form method="post">
         {% csrf_token %}
 
         <div class="mb-3">
             <label class="form-label">Descripción</label>
-            <input type="text" name="descripcion" class="form-control" required>
+            <input type="text" name="descripcion" class="form-control"
+                   value="{{ pago.descripcion|default:'' }}" required>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Monto (dejar vacío si es variable)</label>
-            <input type="number" name="monto" class="form-control" step="0.01">
+            <input type="number" name="monto" class="form-control" step="0.01"
+                   value="{{ pago.monto|default:'' }}">
         </div>
 
         <div class="mb-3" id="bloque-dia-mes">
             <label class="form-label">Día del mes que se paga</label>
-            <input type="number" name="dia_pago" class="form-control" min="1" max="31">
+            <input type="number" name="dia_pago" class="form-control" min="1" max="31"
+                   value="{{ pago.dia_pago|default:'' }}">
         </div>
 
         <div class="mb-3" id="bloque-dia-semana" style="display:none">
             <label class="form-label">Día de la semana</label>
             <select name="dia_semana" class="form-select">
-                <option value="0">Lunes</option>
-                <option value="1">Martes</option>
-                <option value="2">Miércoles</option>
-                <option value="3">Jueves</option>
-                <option value="4">Viernes</option>
-                <option value="5">Sábado</option>
-                <option value="6">Domingo</option>
+                <option value="0" {% if pago.dia_semana == 0 %}selected{% endif %}>Lunes</option>
+                <option value="1" {% if pago.dia_semana == 1 %}selected{% endif %}>Martes</option>
+                <option value="2" {% if pago.dia_semana == 2 %}selected{% endif %}>Miércoles</option>
+                <option value="3" {% if pago.dia_semana == 3 %}selected{% endif %}>Jueves</option>
+                <option value="4" {% if pago.dia_semana == 4 %}selected{% endif %}>Viernes</option>
+                <option value="5" {% if pago.dia_semana == 5 %}selected{% endif %}>Sábado</option>
+                <option value="6" {% if pago.dia_semana == 6 %}selected{% endif %}>Domingo</option>
             </select>
         </div>
 
@@ -41,7 +44,10 @@
             <select name="categoria" class="form-select">
                 <option value="">Sin categoría</option>
                 {% for c in categorias %}
-                    <option value="{{ c.pk }}">{{ c }}</option>
+                <option value="{{ c.pk }}"
+                    {% if pago.categoria and pago.categoria.pk == c.pk %}selected{% endif %}>
+                    {{ c }}
+                </option>
                 {% endfor %}
             </select>
         </div>
@@ -49,37 +55,41 @@
         <div class="mb-3">
             <label class="form-label">Frecuencia</label>
             <select name="frecuencia" class="form-select">
-                <option value="mensual">Mensual fijo</option>
-                <option value="semanal">Semanal</option>
-                <option value="cuotas">En cuotas</option>
+                <option value="mensual" {% if pago.frecuencia == 'mensual' or not pago %}selected{% endif %}>Mensual fijo</option>
+                <option value="semanal" {% if pago.frecuencia == 'semanal' %}selected{% endif %}>Semanal</option>
+                <option value="cuotas"  {% if pago.frecuencia == 'cuotas'  %}selected{% endif %}>En cuotas</option>
             </select>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Total de cuotas (solo si es en cuotas)</label>
-            <input type="number" name="total_cuotas" class="form-control" min="1" max="999">
+            <input type="number" name="total_cuotas" class="form-control" min="1" max="999"
+                   value="{{ pago.total_cuotas|default:'' }}">
         </div>
 
         <div class="mb-3">
             <label class="form-label">Cuotas ya pagadas (si el crédito ya está en curso)</label>
-            <input type="number" name="cuotas_pagadas" class="form-control" min="0" max="999" value="0">
-            <div class="form-text">
-                Ej: si llevas 170 de 180 cuotas pagadas, pon 170 aquí.
-            </div>
+            <input type="number" name="cuotas_pagadas" class="form-control" min="0" max="999"
+                   value="{{ pago.cuotas_pagadas|default:'0' }}">
+            <small class="text-muted">Ej: si llevas 3 de 12 cuotas pagadas, pon 3 aquí.</small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Prioridad</label>
             <select name="prioridad" class="form-select">
-                <option value="urgente">Urgente</option>
-                <option value="alta">Alta</option>
-                <option value="normal">Normal</option>
-                <option value="postergable">Postergable</option>
+                <option value="urgente"     {% if pago.prioridad == 'urgente'     %}selected{% endif %}>Urgente</option>
+                <option value="alta"        {% if pago.prioridad == 'alta'        %}selected{% endif %}>Alta</option>
+                <option value="normal"      {% if pago.prioridad == 'normal' or not pago %}selected{% endif %}>Normal</option>
+                <option value="postergable" {% if pago.prioridad == 'postergable' %}selected{% endif %}>Postergable</option>
             </select>
         </div>
 
-        <button type="submit" class="btn btn-dark">Guardar</button>
-        <a href="{% url 'lista_recurrentes' %}" class="btn btn-outline-dark">Cancelar</a>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-dark">
+                {% if pago %}Guardar cambios{% else %}Guardar{% endif %}
+            </button>
+            <a href="{% url 'lista_recurrentes' %}" class="btn btn-outline-dark">Cancelar</a>
+        </div>
     </form>
 </div>
 

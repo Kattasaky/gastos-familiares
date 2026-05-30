@@ -385,12 +385,21 @@ def editar_recurrente(request, pk):
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
     if request.method == 'POST':
         pago.descripcion = request.POST.get('descripcion', pago.descripcion)
-        pago.monto = request.POST.get('monto') or pago.monto
-        pago.dia_pago = request.POST.get('dia_pago') or pago.dia_pago
+        monto = request.POST.get('monto', '').strip()
+        pago.monto = monto if monto else None
+        dia_pago = request.POST.get('dia_pago', '').strip()
+        pago.dia_pago = int(dia_pago) if dia_pago else None
+        dia_semana = request.POST.get('dia_semana', '').strip()
+        pago.dia_semana = int(dia_semana) if dia_semana else None
         pago.frecuencia = request.POST.get('frecuencia', pago.frecuencia)
-        pago.total_cuotas = request.POST.get('total_cuotas') or pago.total_cuotas
+        total_cuotas = request.POST.get('total_cuotas', '').strip()
+        pago.total_cuotas = int(total_cuotas) if total_cuotas else None
+        cuotas_pagadas = request.POST.get('cuotas_pagadas', '0').strip()
+        pago.cuotas_pagadas = int(cuotas_pagadas) if cuotas_pagadas else 0
         pago.prioridad = request.POST.get('prioridad', pago.prioridad)
-        pago.dia_semana = request.POST.get('dia_semana') or pago.dia_semana
+        pago.categoria_id = request.POST.get('categoria') or None
+        if pago.total_cuotas is None or pago.cuotas_pagadas < pago.total_cuotas:
+            pago.activo = True
         pago.save()
         messages.success(request, 'Pago recurrente actualizado.')
         return redirect('lista_recurrentes')
@@ -398,7 +407,6 @@ def editar_recurrente(request, pk):
         'pago': pago,
         'categorias': Categoria.objects.all(),
     })
-
 
 # ─────────────────────────────────────────────
 # INGRESOS

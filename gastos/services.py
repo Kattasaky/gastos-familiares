@@ -25,7 +25,7 @@ def crear_gasto(usuario, descripcion, monto, categoria_id=None,
         descripcion=descripcion.strip(),
         monto=monto,
         categoria_id=categoria_id,
-        fecha=fecha or timezone.now().date(),
+        fecha=fecha or timezone.localdate(),
         fecha_vencimiento=fecha_vencimiento,
         prioridad=prioridad,
         notas=notas,
@@ -40,7 +40,7 @@ def marcar_pagado(gasto_id, usuario):
 
 
 def actualizar_estados_vencidos():
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     return Gasto.objects.filter(
         estado='pendiente',
         fecha_vencimiento__lt=hoy
@@ -71,7 +71,7 @@ def resumen_mensual(usuario, año, mes):
 
 
 def gastos_proximos_a_vencer(usuario, dias=7):
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     limite = hoy + timezone.timedelta(days=dias)
     return Gasto.objects.filter(
         usuario=usuario,
@@ -184,7 +184,7 @@ def generar_gastos_del_mes(usuario):
     Solo crea el gasto si no existe ya uno para este mes con esa descripción.
     El recurrente NUNCA se elimina — solo se marca inactivo si terminó las cuotas.
     """
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     generados = 0
     pagos = PagoRecurrente.objects.filter(usuario=usuario, activo=True)
 
@@ -241,7 +241,7 @@ def crear_ingreso(usuario, descripcion, monto, tipo='sueldo', fecha=None, es_fij
         descripcion=descripcion.strip(),
         monto=monto,
         tipo=tipo,
-        fecha=fecha or timezone.now().date(),
+        fecha=fecha or timezone.localdate(),
         es_fijo=es_fijo,
     )
 
@@ -276,7 +276,7 @@ def crear_prestamo(usuario, persona, concepto, monto_total,
         concepto=concepto.strip(),
         monto_total=monto_total,
         tipo=tipo,
-        fecha_prestamo=fecha_prestamo or timezone.now().date(),
+        fecha_prestamo=fecha_prestamo or timezone.localdate(),
         fecha_vencimiento=fecha_vencimiento or None,
         notas=notas,
     )
@@ -292,7 +292,7 @@ def registrar_pago_prestamo(usuario, prestamo_id, monto, fecha=None, notas=''):
     PagoPrestamo.objects.create(
         prestamo=prestamo,
         monto=monto,
-        fecha=fecha or timezone.now().date(),
+        fecha=fecha or timezone.localdate(),
         notas=notas,
     )
     prestamo.monto_pagado += monto
@@ -320,7 +320,7 @@ def resumen_prestamos(usuario):
 
 
 def actualizar_estados_prestamos_vencidos():
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     return Prestamo.objects.filter(
         estado='vigente',
         fecha_vencimiento__lt=hoy,
@@ -355,7 +355,7 @@ def registrar_aporte_meta(usuario, meta_id, monto, fecha=None, notas=''):
     AporteMeta.objects.create(
         meta=meta,
         monto=monto,
-        fecha=fecha or timezone.now().date(),
+        fecha=fecha or timezone.localdate(),
         notas=notas,
     )
     return meta

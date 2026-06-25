@@ -19,7 +19,7 @@ from .models import (
 
 @login_required
 def inicio(request):
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     services.generar_gastos_del_mes(request.user)
     services.actualizar_estados_vencidos()
     services.actualizar_estados_prestamos_vencidos()
@@ -38,7 +38,7 @@ def inicio(request):
 def lista_gastos(request):
     from django.db.models import Sum
     services.actualizar_estados_vencidos()
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     año = int(request.GET.get('año', hoy.year))
     mes = int(request.GET.get('mes', hoy.month))
     estado_filtro = request.GET.get('estado', '')
@@ -202,7 +202,7 @@ def toggle_compra(request, pk):
                 descripcion=f"🛒 {item.nombre} (1 unidad)",
                 monto=item.valor_aprox,
                 categoria=item.categoria,
-                fecha=timezone.now().date(),
+                fecha=timezone.localdate(),
                 estado='pagado',
                 prioridad='normal',
             )
@@ -347,7 +347,7 @@ def eliminar_recurrente(request, pk):
 
 @login_required
 def pagar_cuota_mes(request, pk):
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
 
     # Buscar si ya existe el gasto generado automáticamente este mes
@@ -418,7 +418,7 @@ def editar_recurrente(request, pk):
 
 @login_required
 def lista_ingresos(request):
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     ingresos = Ingreso.objects.filter(usuario=request.user)
     resumen = services.resumen_ingresos_mes(request.user, hoy.year, hoy.month)
     return render(request, 'gastos/ingresos.html', {
@@ -511,7 +511,7 @@ def nuevo_prestamo(request):
                     usuario=request.user,
                     descripcion=f"Préstamo a {persona} — {concepto}",
                     monto=monto_total,
-                    fecha=fecha_prestamo or timezone.now().date(),
+                    fecha=fecha_prestamo or timezone.localdate(),
                     estado='pagado',
                     prioridad='alta',
                 )
@@ -547,7 +547,7 @@ def registrar_pago_prestamo(request, pk):
                     usuario=request.user,
                     descripcion=f"Pago préstamo: {prestamo.persona} — {prestamo.concepto}",
                     monto=monto,
-                    fecha=fecha or timezone.now().date(),
+                    fecha=fecha or timezone.localdate(),
                     estado='pagado',
                     prioridad='alta',
                     notas=notas,

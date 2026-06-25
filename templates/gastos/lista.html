@@ -91,12 +91,6 @@
                 <td>
                     <div class="d-flex gap-1 flex-wrap">
                         <a href="{% url 'editar_gasto' g.pk %}" class="btn btn-sm btn-outline-dark">Editar</a>
-                        {% if g.estado != 'pagado' %}
-                        <form method="post" action="{% url 'marcar_pagado' g.pk %}">
-                            {% csrf_token %}
-                            <button class="btn btn-sm btn-success">Pagado</button>
-                        </form>
-                        {% endif %}
                         <form method="post" action="{% url 'eliminar_gasto' g.pk %}">
                             {% csrf_token %}
                             <button class="btn btn-sm btn-danger"

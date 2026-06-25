@@ -82,15 +82,19 @@ def lista_gastos(request):
 def nuevo_gasto(request):
     if request.method == 'POST':
         try:
-            services.crear_gasto(
+            gasto = services.crear_gasto(
                 usuario=request.user,
                 descripcion=request.POST.get('descripcion', ''),
                 monto=request.POST.get('monto', 0),
                 categoria_id=request.POST.get('categoria') or None,
+                fecha=request.POST.get('fecha') or None,
                 fecha_vencimiento=request.POST.get('fecha_vencimiento') or None,
                 prioridad=request.POST.get('prioridad', 'normal'),
                 notas=request.POST.get('notas', ''),
             )
+            # Un gasto ingresado manualmente ya salió del bolsillo: nace pagado
+            gasto.estado = 'pagado'
+            gasto.save(update_fields=['estado'])
             messages.success(request, 'Gasto registrado.')
             return redirect('lista_gastos')
         except (ValueError, Exception) as e:

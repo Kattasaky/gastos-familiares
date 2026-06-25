@@ -43,9 +43,9 @@
         <div class="mb-3">
             <label class="form-label">Prioridad</label>
             <select name="prioridad" class="form-select">
-                <option value="normal" {% if gasto.prioridad == 'normal' %}selected{% endif %}>Normal</option>
-                <option value="alta" {% if gasto.prioridad == 'alta' %}selected{% endif %}>Alta</option>
                 <option value="urgente" {% if gasto.prioridad == 'urgente' %}selected{% endif %}>Urgente</option>
+                <option value="alta" {% if gasto.prioridad == 'alta' %}selected{% endif %}>Alta</option>
+                <option value="normal" {% if gasto.prioridad == 'normal' or not gasto %}selected{% endif %}>Normal</option>
                 <option value="postergable" {% if gasto.prioridad == 'postergable' %}selected{% endif %}>Postergable</option>
             </select>
         </div>

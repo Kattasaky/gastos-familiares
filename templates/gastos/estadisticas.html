@@ -192,6 +192,69 @@
 </div>
 {% endif %}
 
+<!-- PROYECCIÓN ANUAL REAL (suma de los 12 meses, no extrapolación) -->
+<h5 class="mt-4">
+    📅 Proyección anual real — {{ año }}
+    <small class="text-muted fs-6">— suma real de los 12 meses del año, no una extrapolación del período visto</small>
+</h5>
+<div class="row mb-3 g-2">
+    <div class="col-6 col-md-4">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">💸 Gasto total del año</h6>
+                <h4 class="mb-0">${{ total_egresos_anual_real|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">💰 Ingreso total del año</h6>
+                <h4 class="mb-0">${{ total_ingresos_anual_real|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card text-white {% if balance_anual_real >= 0 %}bg-info{% else %}bg-dark border border-danger{% endif %} h-100">
+            <div class="card-body py-2">
+                <h6 class="card-title small mb-0">⚖️ Balance real del año</h6>
+                <h4 class="mb-0">${{ balance_anual_real|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if resumen_ingresos_anual %}
+<h6>Ingresos por tipo — total real del año</h6>
+<div class="table-responsive mb-4">
+<table class="table table-hover table-sm">
+    <thead class="table-dark">
+        <tr>
+            <th>Tipo de ingreso</th>
+            <th class="text-end">Total real del año</th>
+            <th>% del total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in resumen_ingresos_anual %}
+        <tr>
+            <td>{{ r.nombre }}</td>
+            <td class="text-end fw-bold">${{ r.total_anual|floatformat:0 }}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height:6px">
+                        <div class="progress-bar bg-primary" style="width:{{ r.porcentaje }}%"></div>
+                    </div>
+                    <small>{{ r.porcentaje }}%</small>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
 <!-- TABLA GASTOS con estado visible -->
 <h5>
     Detalle de gastos

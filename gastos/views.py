@@ -350,18 +350,36 @@ def pagar_cuota_mes(request, pk):
     hoy = timezone.localdate()
     pago = get_object_or_404(PagoRecurrente, pk=pk, usuario=request.user)
 
-    # Buscar si ya existe el gasto generado automáticamente este mes
-    gasto_existente = Gasto.objects.filter(
-        usuario=request.user,
-        descripcion=pago.descripcion,
-        fecha__year=hoy.year,
-        fecha__month=hoy.month,
-    ).first()
+    # Buscar si ya existe el gasto generado automáticamente este período.
+    # Los semanales se identifican por semana (lunes-domingo), no por mes
+    # completo, para no pisar el pago de otra semana con la misma descripción.
+    if pago.frecuencia == 'semanal':
+        lunes = hoy - timezone.timedelta(days=hoy.weekday())
+        domingo = lunes + timezone.timedelta(days=6)
+        gasto_existente = Gasto.objects.filter(
+            usuario=request.user,
+            descripcion=pago.descripcion,
+            fecha__range=(lunes, domingo),
+        ).first()
+    else:
+        gasto_existente = Gasto.objects.filter(
+            usuario=request.user,
+            descripcion=pago.descripcion,
+            fecha__year=hoy.year,
+            fecha__month=hoy.month,
+        ).first()
 
     if gasto_existente:
-        # Marcar el gasto existente como pagado
+        # Marcar el gasto existente como pagado y sincronizar con los
+        # valores actuales del recurrente (el monto puede variar mes a mes,
+        # ej: servicios básicos). El recurrente es la fuente de verdad;
+        # si el gasto fue editado manualmente en Gastos sin tocar el
+        # recurrente, ese cambio se sobreescribe aquí a propósito.
         gasto_existente.estado = 'pagado'
-        gasto_existente.save(update_fields=['estado', 'actualizado_en'])
+        gasto_existente.monto = pago.monto
+        gasto_existente.categoria = pago.categoria
+        gasto_existente.prioridad = pago.prioridad
+        gasto_existente.save(update_fields=['estado', 'monto', 'categoria', 'prioridad', 'actualizado_en'])
     else:
         # No existe aún, crear uno nuevo ya pagado
         Gasto.objects.create(

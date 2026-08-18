@@ -199,18 +199,27 @@ def generar_gastos_del_mes(usuario):
             if pago.dia_semana is None:
                 continue
             fecha_vencimiento = hoy
+            # Los semanales se identifican por semana (lunes-domingo), no por
+            # mes completo, para que cada semana genere su propio registro
+            # en vez de pisar el de otra semana con la misma descripción.
+            lunes = hoy - timezone.timedelta(days=hoy.weekday())
+            domingo = lunes + timezone.timedelta(days=6)
+            ya_existe = Gasto.objects.filter(
+                usuario=usuario,
+                descripcion=pago.descripcion,
+                fecha__range=(lunes, domingo),
+            ).exists()
         else:
             if pago.dia_pago is None:
                 continue
             dia = min(pago.dia_pago, 28)
             fecha_vencimiento = hoy.replace(day=dia)
-
-        ya_existe = Gasto.objects.filter(
-            usuario=usuario,
-            descripcion=pago.descripcion,
-            fecha__year=hoy.year,
-            fecha__month=hoy.month,
-        ).exists()
+            ya_existe = Gasto.objects.filter(
+                usuario=usuario,
+                descripcion=pago.descripcion,
+                fecha__year=hoy.year,
+                fecha__month=hoy.month,
+            ).exists()
 
         if not ya_existe:
             Gasto.objects.create(

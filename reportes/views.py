@@ -96,7 +96,48 @@ def _datos_categorias_json(gastos_todos):
     return json.dumps({'labels': labels, 'values': values})
 
 
-def _resumen_por_categoria(gastos_filtrados, dias, total_pagado):
+def _proyeccion_anual_categorias(usuario, año):
+    """
+    Suma REAL de gastos pagados en los 12 meses del año, agrupados por
+    categoría. A diferencia de extrapolar (por_dia * 365), esto refleja
+    meses irregulares (ej: gastos grandes en meses puntuales) porque suma
+    lo que efectivamente ocurrió en cada uno de los 12 meses.
+    Devuelve un dict {nombre_categoria: total_anual}.
+    """
+    por_cat = (
+        Gasto.objects.filter(usuario=usuario, fecha__year=año, estado='pagado')
+        .values('categoria__nombre', 'categoria__icono')
+        .annotate(total_anual=Sum('monto'))
+    )
+    return {
+        f"{item['categoria__icono'] or ''} {item['categoria__nombre'] or 'Sin categoría'}".strip():
+            float(item['total_anual'] or 0)
+        for item in por_cat
+    }
+
+
+def _proyeccion_anual_ingresos(usuario, año):
+    """
+    Suma REAL de ingresos de los 12 meses del año, agrupados por tipo
+    (sueldo, extra, pyme, otro). Antes no existía ninguna proyección
+    equivalente a la de gastos para el lado de los ingresos.
+    """
+    TIPOS = {'sueldo': 'Sueldo', 'extra': 'Extra', 'pyme': 'Pyme', 'otro': 'Otro'}
+    ingresos_año = Ingreso.objects.filter(usuario=usuario, fecha__year=año)
+    total_general = float(ingresos_año.aggregate(t=Sum('monto'))['t'] or 0)
+    por_tipo = ingresos_año.values('tipo').annotate(total_anual=Sum('monto'))
+    resultado = []
+    for item in por_tipo:
+        total = float(item['total_anual'] or 0)
+        resultado.append({
+            'nombre': TIPOS.get(item['tipo'], item['tipo']),
+            'total_anual': total,
+            'porcentaje': round((total / total_general * 100)) if total_general > 0 else 0,
+        })
+    return sorted(resultado, key=lambda x: -x['total_anual'])
+
+
+def _resumen_por_categoria(gastos_filtrados, dias, total_pagado, proyecciones_anuales_reales):
     """
     Muestra solo gastos PAGADOS en el resumen.
     El porcentaje es sobre el total pagado real.
@@ -114,12 +155,14 @@ def _resumen_por_categoria(gastos_filtrados, dias, total_pagado):
         if total == 0 or dias == 0:
             continue
         por_dia = total / dias
+        nombre = f"{item['categoria__icono'] or ''} {item['categoria__nombre'] or 'Sin categoría'}".strip()
         resultado.append({
-            'nombre': f"{item['categoria__icono'] or ''} {item['categoria__nombre'] or 'Sin categoría'}".strip(),
+            'nombre': nombre,
             'total': total,
             'por_dia': round(por_dia),
             'proyeccion_mensual': round(por_dia * 30),
-            'proyeccion_anual': round(por_dia * 365),
+            # Suma real de los 12 meses del año, no una extrapolación del período visto.
+            'proyeccion_anual': round(proyecciones_anuales_reales.get(nombre, 0)),
             'porcentaje': round((total / total_pagado * 100)) if total_pagado > 0 else 0,
         })
     return resultado
@@ -229,7 +272,19 @@ def estadisticas(request):
     evolucion_labels, evolucion_egresos, evolucion_ingresos, titulo_evolucion = \
         _evolucion(request.user, periodo, año, mes)
 
-    resumen_categorias = _resumen_por_categoria(gastos_qs, dias, float(total_pagado))
+    # ── Proyección anual REAL (suma de los 12 meses del año, no extrapolación)
+    proyecciones_anuales_reales = _proyeccion_anual_categorias(request.user, año)
+    resumen_categorias = _resumen_por_categoria(
+        gastos_qs, dias, float(total_pagado), proyecciones_anuales_reales
+    )
+    resumen_ingresos_anual = _proyeccion_anual_ingresos(request.user, año)
+    total_egresos_anual_real = Gasto.objects.filter(
+        usuario=request.user, fecha__year=año, estado='pagado'
+    ).aggregate(t=Sum('monto'))['t'] or 0
+    total_ingresos_anual_real = Ingreso.objects.filter(
+        usuario=request.user, fecha__year=año
+    ).aggregate(t=Sum('monto'))['t'] or 0
+    balance_anual_real = float(total_ingresos_anual_real) - float(total_egresos_anual_real)
 
     # ── Determinar si hay datos para el gráfico
     datos_cat = json.loads(datos_categorias_json)
@@ -258,6 +313,11 @@ def estadisticas(request):
         'promedio_diario_egresos': promedio_diario_egresos,
         'promedio_diario_ingresos': promedio_diario_ingresos,
         'resumen_categorias': resumen_categorias,
+        # Proyección anual REAL (suma de los 12 meses, no extrapolación)
+        'resumen_ingresos_anual': resumen_ingresos_anual,
+        'total_egresos_anual_real': total_egresos_anual_real,
+        'total_ingresos_anual_real': total_ingresos_anual_real,
+        'balance_anual_real': balance_anual_real,
         # Gráficos
         'datos_categorias_json': datos_categorias_json,
         'datos_ingresos_json': datos_ingresos_json,
